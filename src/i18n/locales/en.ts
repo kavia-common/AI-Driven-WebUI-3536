@@ -675,84 +675,140 @@ const translations = {
     maxControllersReached: 'Maximum number of controllers (5) reached',
     controller: 'Controller (MQTT)'
   },
+  // TR-471: Flattened keys (mapping from old nested paths to new flat keys)
+  // Mapping reference:
+  // tr471.title -> tr471_title
+  // tr471.connection.server -> tr471_connection_server
+  // tr471.connection.port -> tr471_connection_port
+  // tr471.connection.mtu -> tr471_connection_mtu
+  // tr471.connection.dscp -> tr471_connection_dscp
+  // tr471.connection.protocolVersion -> tr471_connection_protocolVersion
+  // tr471.connection.networkInterface -> tr471_connection_networkInterface
+  // tr471.connection.algorithm -> tr471_connection_algorithm
+  // tr471.connection.udpPayloadContent -> tr471_connection_udpPayloadContent
+  // tr471.connection.ethernetPriority -> tr471_connection_ethernetPriority
+  // tr471.connection.authenticationEnabled -> tr471_connection_authenticationEnabled
+  // tr471.connection.authenticationCode -> tr471_connection_authenticationCode
+  // tr471.connection.interfaceRateIncluded -> tr471_connection_interfaceRateIncluded
+  // tr471.connection.jumboFramesPermitted -> tr471_connection_jumboFramesPermitted
+  // tr471.connection.ipdvEnable -> tr471_connection_ipdvEnable
+  // tr471.advanced.toggleShow -> tr471_advanced_toggleShow
+  // tr471.advanced.toggleHide -> tr471_advanced_toggleHide
+  // tr471.advanced.maximumTestBandwidth -> tr471_advanced_maximumTestBandwidth
+  // tr471.advanced.startSendingRate -> tr471_advanced_startSendingRate
+  // tr471.advanced.startSendingRateIndex -> tr471_advanced_startSendingRateIndex
+  // tr471.advanced.numberTestSubIntervals -> tr471_advanced_numberTestSubIntervals
+  // tr471.advanced.numberFirstModeTestSubIntervals -> tr471_advanced_numberFirstModeTestSubIntervals
+  // tr471.advanced.testSubInterval -> tr471_advanced_testSubInterval
+  // tr471.advanced.statusFeedbackInterval -> tr471_advanced_statusFeedbackInterval
+  // tr471.advanced.retryThresh -> tr471_advanced_retryThresh
+  // tr471.advanced.testType -> tr471_advanced_testType
+  // tr471.advanced.seqErrThresh -> tr471_advanced_seqErrThresh
+  // tr471.advanced.reordDupIgnoreEnable -> tr471_advanced_reordDupIgnoreEnable
+  // tr471.advanced.lowerThresh -> tr471_advanced_lowerThresh
+  // tr471.advanced.upperThresh -> tr471_advanced_upperThresh
+  // tr471.advanced.slowAdjThresh -> tr471_advanced_slowAdjThresh
+  // tr471.advanced.highSpeedDelta -> tr471_advanced_highSpeedDelta
+  // tr471.advanced.flowCount -> tr471_advanced_flowCount
+  // tr471.advanced.maximumFlows -> tr471_advanced_maximumFlows
+  // tr471.test.sectionTitle -> tr471_test_sectionTitle
+  // tr471.test.upload -> tr471_test_upload
+  // tr471.test.download -> tr471_test_download
+  // tr471.test.run -> tr471_test_run
+  // tr471.test.running -> tr471_test_running
+  // tr471.test.canNotRun -> tr471_test_canNotRun
+  // tr471.results.title -> tr471_results_title
+  // tr471.results.uploadTitle -> tr471_results_uploadTitle
+  // tr471.results.downloadTitle -> tr471_results_downloadTitle
+  // tr471.results.labels.ipLayerCapacity -> tr471_results_label_ipLayerCapacity
+  // tr471.results.labels.lossRatio -> tr471_results_label_lossRatio
+  // tr471.results.labels.rttRange -> tr471_results_label_rttRange
+  // tr471.results.labels.pdvRange -> tr471_results_label_pdvRange
+  // tr471.results.charts.ipLayerCapacity -> tr471_results_chart_ipLayerCapacity
+  // tr471.results.charts.roundTripTime -> tr471_results_chart_roundTripTime
+  // tr471.results.charts.jitter -> tr471_results_chart_jitter
+  // tr471.results.charts.loss -> tr471_results_chart_loss
+  // tr471.results.state.none -> tr471_results_state_none
+  // tr471.results.state.requested -> tr471_results_state_requested
+  // tr471.results.state.complete -> tr471_results_state_complete
+  // tr471.results.state.error -> tr471_results_state_error
+  // tr471.messages.loadConfigFailed -> tr471_message_loadConfigFailed
+  // tr471.messages.testFailed -> tr471_message_testFailed
   tr471: {
-    title: 'TR-471 Speed Test',
-    // Sections
-    connection: {
-      server: 'Server',
-      port: 'Port',
-      mtu: 'MTU',
-      dscp: 'DSCP',
-      protocolVersion: 'Protocol Version',
-      networkInterface: 'Network Interface',
-      algorithm: 'Algorithm',
-      udpPayloadContent: 'UDP Payload Content',
-      ethernetPriority: 'Ethernet Priority',
-      authenticationEnabled: 'Authentication Enabled',
-      authenticationCode: 'Authentication Code',
-      interfaceRateIncluded: 'Local Interface Rate Included',
-      jumboFramesPermitted: 'Jumbo Frames Permitted',
-      ipdvEnable: 'IPDV Enable'
-    },
-    advanced: {
-      toggleShow: 'Show Advanced Config',
-      toggleHide: 'Hide Advanced Config',
-      maximumTestBandwidth: 'Maximum Test Bandwidth',
-      startSendingRate: 'Start Sending Rate',
-      startSendingRateIndex: 'Start Sending Rate Index',
-      numberTestSubIntervals: 'Number TestSub Intervals',
-      numberFirstModeTestSubIntervals: 'Number First Mode Test Sub Intervals',
-      testSubInterval: 'Test Sub Interval',
-      statusFeedbackInterval: 'Status Feedback Interval',
-      retryThresh: 'Retry Thresh',
-      testType: 'Test Type',
-      seqErrThresh: 'Seq Err Thresh',
-      reordDupIgnoreEnable: 'Record Dup Ignore Enable',
-      lowerThresh: 'Lower Thresh',
-      upperThresh: 'Upper Thresh',
-      slowAdjThresh: 'Slow Adj Thresh',
-      highSpeedDelta: 'High Speed Delta',
-      flowCount: 'Flow Count',
-      maximumFlows: 'Maximum Flows'
-    },
+    // Top-level
+    tr471_title: 'TR-471 Speed Test',
+
+    // Connection section
+    tr471_connection_server: 'Server',
+    tr471_connection_port: 'Port',
+    tr471_connection_mtu: 'MTU',
+    tr471_connection_dscp: 'DSCP',
+    tr471_connection_protocolVersion: 'Protocol Version',
+    tr471_connection_networkInterface: 'Network Interface',
+    tr471_connection_algorithm: 'Algorithm',
+    tr471_connection_udpPayloadContent: 'UDP Payload Content',
+    tr471_connection_ethernetPriority: 'Ethernet Priority',
+    tr471_connection_authenticationEnabled: 'Authentication Enabled',
+    tr471_connection_authenticationCode: 'Authentication Code',
+    tr471_connection_interfaceRateIncluded: 'Local Interface Rate Included',
+    tr471_connection_jumboFramesPermitted: 'Jumbo Frames Permitted',
+    tr471_connection_ipdvEnable: 'IPDV Enable',
+
+    // Advanced section
+    tr471_advanced_toggleShow: 'Show Advanced Config',
+    tr471_advanced_toggleHide: 'Hide Advanced Config',
+    tr471_advanced_maximumTestBandwidth: 'Maximum Test Bandwidth',
+    tr471_advanced_startSendingRate: 'Start Sending Rate',
+    tr471_advanced_startSendingRateIndex: 'Start Sending Rate Index',
+    tr471_advanced_numberTestSubIntervals: 'Number TestSub Intervals',
+    tr471_advanced_numberFirstModeTestSubIntervals: 'Number First Mode Test Sub Intervals',
+    tr471_advanced_testSubInterval: 'Test Sub Interval',
+    tr471_advanced_statusFeedbackInterval: 'Status Feedback Interval',
+    tr471_advanced_retryThresh: 'Retry Thresh',
+    tr471_advanced_testType: 'Test Type',
+    tr471_advanced_seqErrThresh: 'Seq Err Thresh',
+    tr471_advanced_reordDupIgnoreEnable: 'Record Dup Ignore Enable',
+    tr471_advanced_lowerThresh: 'Lower Thresh',
+    tr471_advanced_upperThresh: 'Upper Thresh',
+    tr471_advanced_slowAdjThresh: 'Slow Adj Thresh',
+    tr471_advanced_highSpeedDelta: 'High Speed Delta',
+    tr471_advanced_flowCount: 'Flow Count',
+    tr471_advanced_maximumFlows: 'Maximum Flows',
+
     // Test controls
-    test: {
-      sectionTitle: 'Speed Test Type',
-      upload: 'Upload',
-      download: 'Download',
-      run: 'Run Speed Test',
-      running: 'Running Test...',
-      canNotRun: 'Select at least one test type to run'
-    },
+    tr471_test_sectionTitle: 'Speed Test Type',
+    tr471_test_upload: 'Upload',
+    tr471_test_download: 'Download',
+    tr471_test_run: 'Run Speed Test',
+    tr471_test_running: 'Running Test...',
+    tr471_test_canNotRun: 'Select at least one test type to run',
+
     // Results and metrics
-    results: {
-      title: 'Results Summary',
-      uploadTitle: 'Upload Result',
-      downloadTitle: 'Download Result',
-      labels: {
-        ipLayerCapacity: 'IP Layer Capacity',
-        lossRatio: 'Loss Ratio',
-        rttRange: 'RTT Range',
-        pdvRange: 'PDV Range'
-      },
-      charts: {
-        ipLayerCapacity: 'IP Layer Capacity',
-        roundTripTime: 'Round-trip Time',
-        jitter: 'Jitter',
-        loss: 'Loss'
-      },
-      state: {
-        none: 'None',
-        requested: 'Requested',
-        complete: 'Complete',
-        error: 'Error'
-      }
-    },
+    tr471_results_title: 'Results Summary',
+    tr471_results_uploadTitle: 'Upload Result',
+    tr471_results_downloadTitle: 'Download Result',
+
+    // Labels within results
+    tr471_results_label_ipLayerCapacity: 'IP Layer Capacity',
+    tr471_results_label_lossRatio: 'Loss Ratio',
+    tr471_results_label_rttRange: 'RTT Range',
+    tr471_results_label_pdvRange: 'PDV Range',
+
+    // Charts within results
+    tr471_results_chart_ipLayerCapacity: 'IP Layer Capacity',
+    tr471_results_chart_roundTripTime: 'Round-trip Time',
+    tr471_results_chart_jitter: 'Jitter',
+    tr471_results_chart_loss: 'Loss',
+
+    // Result states
+    tr471_results_state_none: 'None',
+    tr471_results_state_requested: 'Requested',
+    tr471_results_state_complete: 'Complete',
+    tr471_results_state_error: 'Error',
+
     // Common messages
-    messages: {
-      loadConfigFailed: 'Failed to load TR471 config',
-      testFailed: 'TR471 test failed'
-    }
+    tr471_message_loadConfigFailed: 'Failed to load TR471 config',
+    tr471_message_testFailed: 'TR471 test failed'
   },
   diagnostics: {
     title: 'Diagnostics Tools',
