@@ -25,7 +25,7 @@ onMounted(async () => {
         config.value = response.TR471;
     }
     catch (error) {
-        console.error(t('tr471.tr471_message_loadConfigFailed') + ':', error);
+        console.error(t('tr471.message_loadConfigFailed') + ':', error);
     }
     finally {
         loading.value = false;
@@ -96,7 +96,7 @@ const runTest = async () => {
         }
     }
     catch (error) {
-        console.error(t('tr471.tr471_message_testFailed') + ':', error);
+        console.error(t('tr471.message_testFailed') + ':', error);
     }
     finally {
         isRunning.value = false;
@@ -107,7 +107,7 @@ const getCombinedChartData = (field) => {
     if (uploadResult.value && uploadResult.value.IncrementalResult) {
         const uploadData = uploadResult.value.IncrementalResult.map(r => parseFloat(r[field]));
         datasets.push({
-            label: `${t('tr471.tr471_test_upload')} ${field}`,
+            label: `${t('tr471.test_upload')} ${field}`,
             data: uploadData,
             borderColor: 'rgb(54, 162, 235)',
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
@@ -117,7 +117,7 @@ const getCombinedChartData = (field) => {
     if (downloadResult.value && downloadResult.value.IncrementalResult) {
         const downloadData = downloadResult.value.IncrementalResult.map(r => parseFloat(r[field]));
         datasets.push({
-            label: `${t('tr471.tr471_test_download')} ${field}`,
+            label: `${t('tr471.test_download')} ${field}`,
             data: downloadData,
             borderColor: 'rgb(75, 192, 192)',
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -148,7 +148,7 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h1, __VLS_intrinsicElements.h1)({
     ...{ class: "page-title" },
 });
-(__VLS_ctx.t('tr471.tr471_title'));
+(__VLS_ctx.t('tr471.title'));
 if (__VLS_ctx.loading) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "loading-container" },
@@ -174,7 +174,7 @@ else if (__VLS_ctx.config) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
         ...{ class: "form-label" },
     });
-    (__VLS_ctx.t('tr471.tr471_connection_server'));
+    (__VLS_ctx.t('tr471.connection_server'));
     /** @type {[typeof BaseInput, ]} */ ;
     // @ts-ignore
     const __VLS_3 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -189,7 +189,7 @@ else if (__VLS_ctx.config) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
         ...{ class: "form-label" },
     });
-    (__VLS_ctx.t('tr471.tr471_connection_port'));
+    (__VLS_ctx.t('tr471.connection_port'));
     /** @type {[typeof BaseInput, ]} */ ;
     // @ts-ignore
     const __VLS_6 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -222,7 +222,7 @@ else if (__VLS_ctx.config) {
         onClick: (__VLS_ctx.toggleAdvanced)
     };
     __VLS_11.slots.default;
-    (__VLS_ctx.showAdvanced ? __VLS_ctx.t('tr471.tr471_advanced_toggleHide') : __VLS_ctx.t('tr471.tr471_advanced_toggleShow'));
+    (__VLS_ctx.showAdvanced ? __VLS_ctx.t('tr471.advanced_toggleHide') : __VLS_ctx.t('tr471.advanced_toggleShow'));
     var __VLS_11;
     if (__VLS_ctx.showAdvanced) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -237,7 +237,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_mtu'));
+        (__VLS_ctx.t('tr471.connection_mtu'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_16 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -254,7 +254,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_dscp'));
+        (__VLS_ctx.t('tr471.connection_dscp'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_19 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -271,7 +271,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_protocolVersion'));
+        (__VLS_ctx.t('tr471.connection_protocolVersion'));
         /** @type {[typeof BaseSelect, ]} */ ;
         // @ts-ignore
         const __VLS_22 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
@@ -288,7 +288,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_networkInterface'));
+        (__VLS_ctx.t('tr471.connection_networkInterface'));
         /** @type {[typeof BaseSelect, ]} */ ;
         // @ts-ignore
         const __VLS_25 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
@@ -305,7 +305,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_algorithm'));
+        (__VLS_ctx.t('tr471.connection_algorithm'));
         /** @type {[typeof BaseSelect, ]} */ ;
         // @ts-ignore
         const __VLS_28 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
@@ -336,7 +336,7 @@ else if (__VLS_ctx.config) {
             checked: (__VLS_ctx.config.JumboFramesPermitted === 1),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-        (__VLS_ctx.t('tr471.tr471_connection_jumboFramesPermitted'));
+        (__VLS_ctx.t('tr471.connection_jumboFramesPermitted'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "form-field checkbox-group" },
         });
@@ -357,7 +357,7 @@ else if (__VLS_ctx.config) {
             checked: (__VLS_ctx.config.LocalInterfaceRateIncluded === 1),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-        (__VLS_ctx.t('tr471.tr471_connection_interfaceRateIncluded'));
+        (__VLS_ctx.t('tr471.connection_interfaceRateIncluded'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "form-field checkbox-group" },
         });
@@ -378,14 +378,14 @@ else if (__VLS_ctx.config) {
             checked: (__VLS_ctx.config.IPDVEnable === 1),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-        (__VLS_ctx.t('tr471.tr471_connection_ipdvEnable'));
+        (__VLS_ctx.t('tr471.connection_ipdvEnable'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "form-field" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_flowCount'));
+        (__VLS_ctx.t('tr471.advanced_flowCount'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_31 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -402,7 +402,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_maximumFlows'));
+        (__VLS_ctx.t('tr471.advanced_maximumFlows'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_34 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -419,7 +419,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_ethernetPriority'));
+        (__VLS_ctx.t('tr471.connection_ethernetPriority'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_37 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -436,7 +436,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_udpPayloadContent'));
+        (__VLS_ctx.t('tr471.connection_udpPayloadContent'));
         /** @type {[typeof BaseSelect, ]} */ ;
         // @ts-ignore
         const __VLS_40 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
@@ -453,7 +453,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_maximumTestBandwidth'));
+        (__VLS_ctx.t('tr471.advanced_maximumTestBandwidth'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_43 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -470,7 +470,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_startSendingRate'));
+        (__VLS_ctx.t('tr471.advanced_startSendingRate'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_46 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -487,7 +487,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_startSendingRateIndex'));
+        (__VLS_ctx.t('tr471.advanced_startSendingRateIndex'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_49 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -504,7 +504,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_numberTestSubIntervals'));
+        (__VLS_ctx.t('tr471.advanced_numberTestSubIntervals'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_52 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -521,7 +521,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_numberFirstModeTestSubIntervals'));
+        (__VLS_ctx.t('tr471.advanced_numberFirstModeTestSubIntervals'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_55 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -538,7 +538,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_testSubInterval'));
+        (__VLS_ctx.t('tr471.advanced_testSubInterval'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_58 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -555,7 +555,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_statusFeedbackInterval'));
+        (__VLS_ctx.t('tr471.advanced_statusFeedbackInterval'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_61 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -572,7 +572,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_retryThresh'));
+        (__VLS_ctx.t('tr471.advanced_retryThresh'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_64 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -589,7 +589,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_testType'));
+        (__VLS_ctx.t('tr471.advanced_testType'));
         /** @type {[typeof BaseSelect, ]} */ ;
         // @ts-ignore
         const __VLS_67 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
@@ -606,7 +606,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_seqErrThresh'));
+        (__VLS_ctx.t('tr471.advanced_seqErrThresh'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_70 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -637,14 +637,14 @@ else if (__VLS_ctx.config) {
             checked: (__VLS_ctx.config.ReordDupIgnoreEnable === 1),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-        (__VLS_ctx.t('tr471.tr471_advanced_reordDupIgnoreEnable'));
+        (__VLS_ctx.t('tr471.advanced_reordDupIgnoreEnable'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "form-field" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_lowerThresh'));
+        (__VLS_ctx.t('tr471.advanced_lowerThresh'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_73 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -661,7 +661,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_upperThresh'));
+        (__VLS_ctx.t('tr471.advanced_upperThresh'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_76 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -678,7 +678,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_slowAdjThresh'));
+        (__VLS_ctx.t('tr471.advanced_slowAdjThresh'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_79 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -695,7 +695,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_advanced_highSpeedDelta'));
+        (__VLS_ctx.t('tr471.advanced_highSpeedDelta'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_82 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
@@ -726,25 +726,25 @@ else if (__VLS_ctx.config) {
             checked: (__VLS_ctx.config.AuthenticationEnabled === 1),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-        (__VLS_ctx.t('tr471.tr471_connection_authenticationEnabled'));
+        (__VLS_ctx.t('tr471.connection_authenticationEnabled'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "form-field" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
             ...{ class: "form-label" },
         });
-        (__VLS_ctx.t('tr471.tr471_connection_authenticationCode'));
+        (__VLS_ctx.t('tr471.connection_authenticationCode'));
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
         const __VLS_85 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
             modelValue: (__VLS_ctx.config.AuthenticationCode),
             type: "password",
-            placeholder: (__VLS_ctx.t('tr471.tr471_connection_authenticationCode')),
+            placeholder: (__VLS_ctx.t('tr471.connection_authenticationCode')),
         }));
         const __VLS_86 = __VLS_85({
             modelValue: (__VLS_ctx.config.AuthenticationCode),
             type: "password",
-            placeholder: (__VLS_ctx.t('tr471.tr471_connection_authenticationCode')),
+            placeholder: (__VLS_ctx.t('tr471.connection_authenticationCode')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_85));
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -756,7 +756,7 @@ else if (__VLS_ctx.config) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({
         ...{ class: "section-title" },
     });
-    (__VLS_ctx.t('tr471.tr471_test_sectionTitle'));
+    (__VLS_ctx.t('tr471.test_sectionTitle'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "checkbox-row" },
     });
@@ -764,21 +764,21 @@ else if (__VLS_ctx.config) {
     // @ts-ignore
     const __VLS_88 = __VLS_asFunctionalComponent(BaseCheckbox, new BaseCheckbox({
         modelValue: (__VLS_ctx.testTypes.upload),
-        label: (__VLS_ctx.t('tr471.tr471_test_upload')),
+        label: (__VLS_ctx.t('tr471.test_upload')),
     }));
     const __VLS_89 = __VLS_88({
         modelValue: (__VLS_ctx.testTypes.upload),
-        label: (__VLS_ctx.t('tr471.tr471_test_upload')),
+        label: (__VLS_ctx.t('tr471.test_upload')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_88));
     /** @type {[typeof BaseCheckbox, ]} */ ;
     // @ts-ignore
     const __VLS_91 = __VLS_asFunctionalComponent(BaseCheckbox, new BaseCheckbox({
         modelValue: (__VLS_ctx.testTypes.download),
-        label: (__VLS_ctx.t('tr471.tr471_test_download')),
+        label: (__VLS_ctx.t('tr471.test_download')),
     }));
     const __VLS_92 = __VLS_91({
         modelValue: (__VLS_ctx.testTypes.download),
-        label: (__VLS_ctx.t('tr471.tr471_test_download')),
+        label: (__VLS_ctx.t('tr471.test_download')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_91));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "run-test-button" },
@@ -802,7 +802,7 @@ else if (__VLS_ctx.config) {
         onClick: (__VLS_ctx.runTest)
     };
     __VLS_96.slots.default;
-    (__VLS_ctx.isRunning ? __VLS_ctx.t('tr471.tr471_test_running') : __VLS_ctx.t('tr471.tr471_test_run'));
+    (__VLS_ctx.isRunning ? __VLS_ctx.t('tr471.test_running') : __VLS_ctx.t('tr471.test_run'));
     var __VLS_96;
     if (__VLS_ctx.uploadResult || __VLS_ctx.downloadResult) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -811,7 +811,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({
             ...{ class: "section-title" },
         });
-        (__VLS_ctx.t('tr471.tr471_results_title'));
+        (__VLS_ctx.t('tr471.results_title'));
         if (__VLS_ctx.uploadResult) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "result-block" },
@@ -819,7 +819,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({
                 ...{ class: "result-title" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_uploadTitle'));
+            (__VLS_ctx.t('tr471.results_uploadTitle'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "result-grid" },
             });
@@ -829,7 +829,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_ipLayerCapacity'));
+            (__VLS_ctx.t('tr471.results_label_ipLayerCapacity'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -840,7 +840,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_lossRatio'));
+            (__VLS_ctx.t('tr471.results_label_lossRatio'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -851,7 +851,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_rttRange'));
+            (__VLS_ctx.t('tr471.results_label_rttRange'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -862,7 +862,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_pdvRange'));
+            (__VLS_ctx.t('tr471.results_label_pdvRange'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -875,7 +875,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({
                 ...{ class: "result-title" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_downloadTitle'));
+            (__VLS_ctx.t('tr471.results_downloadTitle'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "result-grid" },
             });
@@ -885,7 +885,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_ipLayerCapacity'));
+            (__VLS_ctx.t('tr471.results_label_ipLayerCapacity'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -896,7 +896,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_lossRatio'));
+            (__VLS_ctx.t('tr471.results_label_lossRatio'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -907,7 +907,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_rttRange'));
+            (__VLS_ctx.t('tr471.results_label_rttRange'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -918,7 +918,7 @@ else if (__VLS_ctx.config) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-label" },
             });
-            (__VLS_ctx.t('tr471.tr471_results_label_pdvRange'));
+            (__VLS_ctx.t('tr471.results_label_pdvRange'));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "result-value" },
             });
@@ -933,7 +933,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.h4, __VLS_intrinsicElements.h4)({
             ...{ class: "chart-title" },
         });
-        (__VLS_ctx.t('tr471.tr471_results_chart_ipLayerCapacity'));
+        (__VLS_ctx.t('tr471.results_chart_ipLayerCapacity'));
         /** @type {[typeof LineChart, ]} */ ;
         // @ts-ignore
         const __VLS_101 = __VLS_asFunctionalComponent(LineChart, new LineChart({
@@ -948,7 +948,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.h4, __VLS_intrinsicElements.h4)({
             ...{ class: "chart-title" },
         });
-        (__VLS_ctx.t('tr471.tr471_results_chart_roundTripTime'));
+        (__VLS_ctx.t('tr471.results_chart_roundTripTime'));
         /** @type {[typeof LineChart, ]} */ ;
         // @ts-ignore
         const __VLS_104 = __VLS_asFunctionalComponent(LineChart, new LineChart({
@@ -963,7 +963,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.h4, __VLS_intrinsicElements.h4)({
             ...{ class: "chart-title" },
         });
-        (__VLS_ctx.t('tr471.tr471_results_chart_jitter'));
+        (__VLS_ctx.t('tr471.results_chart_jitter'));
         /** @type {[typeof LineChart, ]} */ ;
         // @ts-ignore
         const __VLS_107 = __VLS_asFunctionalComponent(LineChart, new LineChart({
@@ -978,7 +978,7 @@ else if (__VLS_ctx.config) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.h4, __VLS_intrinsicElements.h4)({
             ...{ class: "chart-title" },
         });
-        (__VLS_ctx.t('tr471.tr471_results_chart_loss'));
+        (__VLS_ctx.t('tr471.results_chart_loss'));
         /** @type {[typeof LineChart, ]} */ ;
         // @ts-ignore
         const __VLS_110 = __VLS_asFunctionalComponent(LineChart, new LineChart({
