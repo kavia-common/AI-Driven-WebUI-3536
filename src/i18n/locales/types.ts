@@ -1,6 +1,7 @@
 // Translation type definitions
 export interface Translations {
-  [key: string]: string | { [key: string]: string };
+  // Allow nested namespaces beyond simple string maps (e.g., tr471, thread, etc.)
+  [key: string]: any;
   menu: {
     dashboard: string;
     status: string;
@@ -543,6 +544,84 @@ export interface Translations {
     maxControllersReached: string;
     controller: string;
   };
+
+  // TR-471 i18n typings
+  tr471: {
+    title: string;
+    connection: {
+      server: string;
+      port: string;
+      mtu: string;
+      dscp: string;
+      protocolVersion: string;
+      networkInterface: string;
+      algorithm: string;
+      udpPayloadContent: string;
+      ethernetPriority: string;
+      authenticationEnabled: string;
+      authenticationCode: string;
+      interfaceRateIncluded: string;
+      jumboFramesPermitted: string;
+      ipdvEnable: string;
+    };
+    advanced: {
+      toggleShow: string;
+      toggleHide: string;
+      maximumTestBandwidth: string;
+      startSendingRate: string;
+      startSendingRateIndex: string;
+      numberTestSubIntervals: string;
+      numberFirstModeTestSubIntervals: string;
+      testSubInterval: string;
+      statusFeedbackInterval: string;
+      retryThresh: string;
+      testType: string;
+      seqErrThresh: string;
+      reordDupIgnoreEnable: string;
+      lowerThresh: string;
+      upperThresh: string;
+      slowAdjThresh: string;
+      highSpeedDelta: string;
+      flowCount: string;
+      maximumFlows: string;
+    };
+    test: {
+      sectionTitle: string;
+      upload: string;
+      download: string;
+      run: string;
+      running: string;
+      canNotRun: string;
+    };
+    results: {
+      title: string;
+      uploadTitle: string;
+      downloadTitle: string;
+      labels: {
+        ipLayerCapacity: string;
+        lossRatio: string;
+        rttRange: string;
+        pdvRange: string;
+      };
+      charts: {
+        ipLayerCapacity: string;
+        roundTripTime: string;
+        jitter: string;
+        loss: string;
+      };
+      state: {
+        none: string;
+        requested: string;
+        complete: string;
+        error: string;
+      };
+    };
+    messages: {
+      loadConfigFailed: string;
+      testFailed: string;
+    };
+  };
+
   diagnostics: {
     title: string;
     ping: string;
