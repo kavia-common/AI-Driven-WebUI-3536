@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import BlockingOverlay from '../../../components/BlockingOverlay.vue';
 import BaseButton from '../../../components/common/BaseButton.vue';
 import BaseCard from '../../../components/common/BaseCard.vue';
-import BaseCheckbox from '../../../components/common/BaseCheckbox.vue';
+
 import BaseInput from '../../../components/common/BaseInput.vue';
 import BaseSelect from '../../../components/common/BaseSelect.vue';
 import { useQA } from '../../../utils/qa';
@@ -361,21 +361,35 @@ onMounted(fetchConfig);
           <div class="section-title">{{ t('wireless.commonSsidSettings') }}</div>
           <div class="fields-grid">
             <div class="field">
-              <BaseCheckbox
-                :model-value="draft.CommonSSIDEnable === 1"
-                :label="t('wireless.commonSsidEnable')"
-                :data-testid="qa('wlan-basic-multi-common-ssid-enable')"
-                @update:model-value="(v: boolean) => { draft!.CommonSSIDEnable = v ? 1 : 0; onCommonSsidToggle(); }"
-              />
+              <div class="switch-label" :data-testid="qa('wlan-basic-multi-common-ssid-enable')">
+                <span>{{ t('wireless.commonSsidEnable') }}</span>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    :data-testid="qa('wlan-basic-multi-common-ssid-enable-toggle')"
+                    :checked="draft.CommonSSIDEnable === 1"
+                    @change="(e) => { draft!.CommonSSIDEnable = (e.target as HTMLInputElement).checked ? 1 : 0; onCommonSsidToggle(); }"
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
+
             <div class="field">
-              <BaseCheckbox
-                :model-value="draft.MLOEnable === 1"
-                :label="t('wireless.mloEnable')"
-                :disabled="draft.CommonSSIDEnable === 0"
-                :data-testid="qa('wlan-basic-multi-mlo-enable')"
-                @update:model-value="(v: boolean) => { draft!.MLOEnable = v ? 1 : 0; }"
-              />
+              <div class="switch-label" :data-testid="qa('wlan-basic-multi-mlo-enable')">
+                <span>{{ t('wireless.mloEnable') }}</span>
+                <label class="switch" :class="{ 'is-disabled': draft.CommonSSIDEnable === 0 }">
+                  <input
+                    type="checkbox"
+                    :data-testid="qa('wlan-basic-multi-mlo-enable-toggle')"
+                    :checked="draft.MLOEnable === 1"
+                    :disabled="draft.CommonSSIDEnable === 0"
+                    @change="(e) => { draft!.MLOEnable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
+
               <div v-if="draft.CommonSSIDEnable === 0" class="hint">
                 {{ t('wireless.commonSsidDisabled') }}
               </div>
@@ -394,12 +408,17 @@ onMounted(fetchConfig);
           <!-- Requirement: In Common SSID mode, this section must have ONLY its own Enable toggle. -->
           <div class="row-head">
             <div class="row-title">{{ t('common.enable') }}</div>
-            <BaseCheckbox
-              :model-value="draft.Interface[0].Enable === 1"
-              :label="t('common.enable')"
-              :data-testid="qa('wlan-basic-multi-common-band-enable')"
-              @update:model-value="(v: boolean) => { draft!.Interface[0].Enable = v ? 1 : 0; }"
-            />
+            <div class="switch-label" :data-testid="qa('wlan-basic-multi-common-band-enable')">
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  :data-testid="qa('wlan-basic-multi-common-band-enable-toggle')"
+                  :checked="draft.Interface[0].Enable === 1"
+                  @change="(e) => { draft!.Interface[0].Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                >
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
 
           <!-- Common SSID fields: single block for SSID/Auth/PSK -->
@@ -461,12 +480,18 @@ onMounted(fetchConfig);
             <div v-for="b in bands" :key="b" class="iface-row" :data-testid="qa(`wlan-basic-multi-iface-${slug(b)}`)">
               <div class="row-head">
                 <div class="row-title">{{ b }}</div>
-                <BaseCheckbox
-                  :model-value="getInterfaceByBand(b)!.Enable === 1"
-                  :label="t('common.enable')"
-                  :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)"
-                  @update:model-value="(v: boolean) => { getInterfaceByBand(b)!.Enable = v ? 1 : 0; }"
-                />
+                <div class="switch-label" :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)">
+                  <span class="sr-only">{{ t('common.enable') }}</span>
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      :data-testid="qa(`wlan-basic-multi-iface-enable-toggle-${slug(b)}`)"
+                      :checked="getInterfaceByBand(b)!.Enable === 1"
+                      @change="(e) => { getInterfaceByBand(b)!.Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                    >
+                    <span class="slider"></span>
+                  </label>
+                </div>
               </div>
 
               <div class="row row-3">
@@ -710,6 +735,84 @@ onMounted(fetchConfig);
 .row-title {
   font-size: 13px;
   font-weight: 600;
+}
+
+/* Switch styling (matches Advanced Config slide switch pattern) */
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: 0.2s;
+  border-radius: 999px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #0070BB;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.switch input:focus + .slider {
+  box-shadow: 0 0 0 2px rgba(0, 112, 187, 0.25);
+}
+
+.switch input:disabled + .slider {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.switch.is-disabled {
+  opacity: 0.8;
+}
+
+/* Screen-reader only utility for unlabeled switches */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .compact-rows {
