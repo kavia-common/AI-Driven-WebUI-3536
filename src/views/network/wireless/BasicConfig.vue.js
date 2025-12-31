@@ -260,6 +260,7 @@ let __VLS_directives;
 /** @type {__VLS_StyleScopedClasses['slider']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['icon-btn']} */ ;
 /** @type {__VLS_StyleScopedClasses['group-table-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['group-table-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['fields-grid']} */ ;

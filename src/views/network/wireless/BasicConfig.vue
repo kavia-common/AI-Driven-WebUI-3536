@@ -865,6 +865,13 @@ onMounted(fetchConfig);
   cursor: pointer;
 }
 
+/* Minimal tweak: some browsers render Material Icons slightly low inside square buttons.
+   Nudge only the glyph (not the button) to keep hit area unchanged. */
+.icon-btn .material-icons {
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
 .icon-btn:disabled {
   cursor: not-allowed;
   opacity: 0.6;
