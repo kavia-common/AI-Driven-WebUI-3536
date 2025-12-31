@@ -383,8 +383,12 @@ onMounted(fetchConfig);
           </div>
         </div>
 
-        <!-- Common SSID band settings -->
-        <div class="edit-section" :data-testid="qa('wlan-basic-multi-common-band-section')">
+        <!-- Common SSID band settings (ONLY when Common SSID is ON) -->
+        <div
+          v-if="draft.CommonSSIDEnable === 1"
+          class="edit-section"
+          :data-testid="qa('wlan-basic-multi-common-band-section')"
+        >
           <div class="section-title">{{ t('wireless.commonSsidBandSettings') }}</div>
 
           <!-- Requirement: In Common SSID mode, this section must have ONLY its own Enable toggle. -->
@@ -393,18 +397,13 @@ onMounted(fetchConfig);
             <BaseCheckbox
               :model-value="draft.Interface[0].Enable === 1"
               :label="t('common.enable')"
-              :disabled="draft.CommonSSIDEnable === 0"
               :data-testid="qa('wlan-basic-multi-common-band-enable')"
               @update:model-value="(v: boolean) => { draft!.Interface[0].Enable = v ? 1 : 0; }"
             />
           </div>
 
-          <!-- If Common SSID is ON: show single block for SSID/Auth/PSK -->
-          <div
-            v-if="draft.CommonSSIDEnable === 1"
-            class="common-ssid-fields compact-rows"
-            :data-testid="qa('wlan-basic-multi-common-ssid-fields')"
-          >
+          <!-- Common SSID fields: single block for SSID/Auth/PSK -->
+          <div class="common-ssid-fields compact-rows" :data-testid="qa('wlan-basic-multi-common-ssid-fields')">
             <div class="row row-3">
               <div class="cell cell-ssid">
                 <BaseInput

@@ -557,45 +557,43 @@ if (__VLS_ctx.draft && __VLS_ctx.editIndex !== null) {
         });
         (__VLS_ctx.t('wireless.commonSsidDisabled'));
     }
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "edit-section" },
-        'data-testid': (__VLS_ctx.qa('wlan-basic-multi-common-band-section')),
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "section-title" },
-    });
-    (__VLS_ctx.t('wireless.commonSsidBandSettings'));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "row-head" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "row-title" },
-    });
-    (__VLS_ctx.t('common.enable'));
-    /** @type {[typeof BaseCheckbox, ]} */ ;
-    // @ts-ignore
-    const __VLS_48 = __VLS_asFunctionalComponent(BaseCheckbox, new BaseCheckbox({
-        ...{ 'onUpdate:modelValue': {} },
-        modelValue: (__VLS_ctx.draft.Interface[0].Enable === 1),
-        label: (__VLS_ctx.t('common.enable')),
-        disabled: (__VLS_ctx.draft.CommonSSIDEnable === 0),
-        dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-band-enable')),
-    }));
-    const __VLS_49 = __VLS_48({
-        ...{ 'onUpdate:modelValue': {} },
-        modelValue: (__VLS_ctx.draft.Interface[0].Enable === 1),
-        label: (__VLS_ctx.t('common.enable')),
-        disabled: (__VLS_ctx.draft.CommonSSIDEnable === 0),
-        dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-band-enable')),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_48));
-    let __VLS_51;
-    let __VLS_52;
-    let __VLS_53;
-    const __VLS_54 = {
-        'onUpdate:modelValue': ((v) => { __VLS_ctx.draft.Interface[0].Enable = v ? 1 : 0; })
-    };
-    var __VLS_50;
     if (__VLS_ctx.draft.CommonSSIDEnable === 1) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "edit-section" },
+            'data-testid': (__VLS_ctx.qa('wlan-basic-multi-common-band-section')),
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "section-title" },
+        });
+        (__VLS_ctx.t('wireless.commonSsidBandSettings'));
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "row-head" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "row-title" },
+        });
+        (__VLS_ctx.t('common.enable'));
+        /** @type {[typeof BaseCheckbox, ]} */ ;
+        // @ts-ignore
+        const __VLS_48 = __VLS_asFunctionalComponent(BaseCheckbox, new BaseCheckbox({
+            ...{ 'onUpdate:modelValue': {} },
+            modelValue: (__VLS_ctx.draft.Interface[0].Enable === 1),
+            label: (__VLS_ctx.t('common.enable')),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-band-enable')),
+        }));
+        const __VLS_49 = __VLS_48({
+            ...{ 'onUpdate:modelValue': {} },
+            modelValue: (__VLS_ctx.draft.Interface[0].Enable === 1),
+            label: (__VLS_ctx.t('common.enable')),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-band-enable')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_48));
+        let __VLS_51;
+        let __VLS_52;
+        let __VLS_53;
+        const __VLS_54 = {
+            'onUpdate:modelValue': ((v) => { __VLS_ctx.draft.Interface[0].Enable = v ? 1 : 0; })
+        };
+        var __VLS_50;
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "common-ssid-fields compact-rows" },
             'data-testid': (__VLS_ctx.qa('wlan-basic-multi-common-ssid-fields')),
