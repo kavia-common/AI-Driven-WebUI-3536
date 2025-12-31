@@ -467,16 +467,18 @@ onMounted(fetchConfig);
           <!-- Requirement: In Common SSID mode, this section must have ONLY its own Enable toggle. -->
           <div class="row-head">
             <div class="row-title">{{ t('common.enable') }}</div>
-            <div class="switch-label" :data-testid="qa('wlan-basic-multi-common-band-enable')">
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  :data-testid="qa('wlan-basic-multi-common-band-enable-toggle')"
-                  :checked="draft.Interface[0].Enable === 1"
-                  @change="(e) => { draft!.Interface[0].Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
-                >
-                <span class="slider"></span>
-              </label>
+            <div class="row-right">
+              <div class="switch-label" :data-testid="qa('wlan-basic-multi-common-band-enable')">
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    :data-testid="qa('wlan-basic-multi-common-band-enable-toggle')"
+                    :checked="draft.Interface[0].Enable === 1"
+                    @change="(e) => { draft!.Interface[0].Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -545,17 +547,19 @@ onMounted(fetchConfig);
             <div v-for="b in bands" :key="b" class="iface-row" :data-testid="qa(`wlan-basic-multi-iface-${slug(b)}`)">
               <div class="row-head">
                 <div class="row-title">{{ b }}</div>
-                <div class="switch-label" :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)">
-                  <span class="sr-only">{{ t('common.enable') }}</span>
-                  <label class="switch">
-                    <input
-                      type="checkbox"
-                      :data-testid="qa(`wlan-basic-multi-iface-enable-toggle-${slug(b)}`)"
-                      :checked="getInterfaceByBand(b)!.Enable === 1"
-                      @change="(e) => { getInterfaceByBand(b)!.Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
-                    >
-                    <span class="slider"></span>
-                  </label>
+                <div class="row-right">
+                  <div class="switch-label" :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)">
+                    <span class="sr-only">{{ t('common.enable') }}</span>
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        :data-testid="qa(`wlan-basic-multi-iface-enable-toggle-${slug(b)}`)"
+                        :checked="getInterfaceByBand(b)!.Enable === 1"
+                        @change="(e) => { getInterfaceByBand(b)!.Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                      >
+                      <span class="slider"></span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -791,11 +795,17 @@ onMounted(fetchConfig);
 .row-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 10px;
+}
+
+/* Right-align header controls (e.g., slide switches) while keeping compact layout. */
+.row-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
 }
 
 .row-title {
@@ -810,6 +820,11 @@ onMounted(fetchConfig);
   justify-content: space-between;
   gap: 10px;
   width: 100%;
+}
+
+/* In header rows, the switch should size to content so it can sit flush right. */
+.row-head .switch-label {
+  width: auto;
 }
 
 .switch {

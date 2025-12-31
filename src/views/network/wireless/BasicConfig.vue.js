@@ -303,6 +303,8 @@ let __VLS_directives;
 /** @type {__VLS_StyleScopedClasses['col-name']} */ ;
 /** @type {__VLS_StyleScopedClasses['pill']} */ ;
 /** @type {__VLS_StyleScopedClasses['pill']} */ ;
+/** @type {__VLS_StyleScopedClasses['row-head']} */ ;
+/** @type {__VLS_StyleScopedClasses['switch-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch']} */ ;
 /** @type {__VLS_StyleScopedClasses['slider']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch']} */ ;
@@ -598,6 +600,9 @@ if (__VLS_ctx.draft && __VLS_ctx.editIndex !== null) {
         });
         (__VLS_ctx.t('common.enable'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "row-right" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "switch-label" },
             'data-testid': (__VLS_ctx.qa('wlan-basic-multi-common-band-enable')),
         });
@@ -726,6 +731,9 @@ if (__VLS_ctx.draft && __VLS_ctx.editIndex !== null) {
                 ...{ class: "row-title" },
             });
             (b);
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "row-right" },
+            });
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "switch-label" },
                 'data-testid': (__VLS_ctx.qa(`wlan-basic-multi-iface-enable-${__VLS_ctx.slug(b)}`)),
@@ -952,6 +960,7 @@ var __VLS_54;
 /** @type {__VLS_StyleScopedClasses['section-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['row-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['row-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['row-right']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch']} */ ;
 /** @type {__VLS_StyleScopedClasses['slider']} */ ;
@@ -974,6 +983,7 @@ var __VLS_54;
 /** @type {__VLS_StyleScopedClasses['iface-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['row-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['row-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['row-right']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['sr-only']} */ ;
 /** @type {__VLS_StyleScopedClasses['switch']} */ ;
