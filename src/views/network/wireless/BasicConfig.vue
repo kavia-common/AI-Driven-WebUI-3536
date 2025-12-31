@@ -18,6 +18,8 @@ import type {
   WlanGroupInterface
 } from '../../../types/wlanBasicMulti';
 
+type CommonSSIDBandSettingItem = NonNullable<WlanGroup['CommonSSIDBandSetting']>[number];
+
 const { t } = useI18n();
 const router = useRouter();
 const { qa, slug } = useQA();
@@ -45,11 +47,11 @@ const normalizeGroup = (group: WlanGroup): WlanGroup => {
 
   // Ensure CommonSSIDBandSetting exists with 2.4/5/6 entries
   if (!copy.CommonSSIDBandSetting || copy.CommonSSIDBandSetting.length === 0) {
-    copy.CommonSSIDBandSetting = bands.map((b) => ({ Band: b, Enable: 1 }));
+    copy.CommonSSIDBandSetting = bands.map((b: (typeof bands)[number]) => ({ Band: b, Enable: 1 }));
   } else {
     // ensure all bands exist
     for (const b of bands) {
-      if (!copy.CommonSSIDBandSetting.some((x) => x.Band === b)) {
+      if (!copy.CommonSSIDBandSetting.some((x: CommonSSIDBandSettingItem) => x.Band === b)) {
         copy.CommonSSIDBandSetting.push({ Band: b, Enable: 1 });
       }
     }
@@ -58,7 +60,7 @@ const normalizeGroup = (group: WlanGroup): WlanGroup => {
   // Ensure Interface array has per-band entries
   if (!copy.Interface) copy.Interface = [];
   for (const b of bands) {
-    if (!copy.Interface.some((i) => i.Band === b)) {
+    if (!copy.Interface.some((i: WlanGroupInterface) => i.Band === b)) {
       copy.Interface.push({
         Band: b,
         Enable: 1,
@@ -142,7 +144,7 @@ const fetchConfig = async () => {
 const groups = computed(() => data.value?.WlanBasic?.WlanGroup ?? []);
 
 const summarizeGroup = (g: WlanGroup) => {
-  const enabledBandCount = (g.CommonSSIDBandSetting ?? []).filter((b) => b.Enable === 1).length;
+  const enabledBandCount = (g.CommonSSIDBandSetting ?? []).filter((b: CommonSSIDBandSettingItem) => b.Enable === 1).length;
   const bandInfo = `${enabledBandCount}/${bands.length} ${t('wireless.bandsEnabled')}`;
   const common = g.CommonSSIDEnable === 1 ? t('common.enabled') : t('common.no');
   const mlo = g.MLOEnable === 1 ? t('common.enabled') : t('common.no');
@@ -211,16 +213,16 @@ const securityModeOptionsForInterface = (itf: WlanGroupInterface): string[] => {
   if (!csv) return [];
   return csv
     .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .map((s: string) => s.trim())
+    .filter((s: string) => Boolean(s));
 };
 
 const getInterfaceByBand = (band: string): WlanGroupInterface | undefined => {
-  return draft.value?.Interface?.find((x) => x.Band === band);
+  return draft.value?.Interface?.find((x: WlanGroupInterface) => x.Band === band);
 };
 
 const getBandSettingByBand = (band: string): WlanGroupBandSetting | undefined => {
-  return draft.value?.CommonSSIDBandSetting?.find((x) => x.Band === band);
+  return draft.value?.CommonSSIDBandSetting?.find((x: WlanGroupBandSetting) => x.Band === band);
 };
 
 const onCommonSsidToggle = () => {
@@ -251,7 +253,7 @@ const onCommonSsidToggle = () => {
 const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
   if (!data.value) return null;
 
-  const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g) => {
+  const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g: WlanGroup) => {
     const norm = normalizeGroup(g);
 
     // When Common SSID is enabled, the UI edits only a single block; ensure all interfaces share those values.
@@ -269,11 +271,11 @@ const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
       SSIDGroupName: norm.SSIDGroupName,
       CommonSSIDEnable: norm.CommonSSIDEnable,
       MLOEnable: norm.MLOEnable,
-      CommonSSIDBandSetting: norm.CommonSSIDBandSetting?.map((b) => ({
+      CommonSSIDBandSetting: norm.CommonSSIDBandSetting?.map((b: WlanGroupBandSetting) => ({
         Band: b.Band,
         Enable: b.Enable
       })),
-      Interface: norm.Interface.map((i) => ({
+      Interface: norm.Interface.map((i: WlanGroupInterface) => ({
         Band: i.Band,
         Enable: i.Enable,
         SSID: i.SSID,

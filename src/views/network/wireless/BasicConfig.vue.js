@@ -189,7 +189,7 @@ const securityModeOptionsForInterface = (itf) => {
     return csv
         .split(',')
         .map((s) => s.trim())
-        .filter(Boolean);
+        .filter((s) => Boolean(s));
 };
 const getInterfaceByBand = (band) => {
     return draft.value?.Interface?.find((x) => x.Band === band);
