@@ -387,65 +387,70 @@ onMounted(fetchConfig);
         <div class="edit-section" :data-testid="qa('wlan-basic-multi-common-band-section')">
           <div class="section-title">{{ t('wireless.commonSsidBandSettings') }}</div>
 
-          <!-- Band toggles always shown here; disabled when Common SSID is off -->
-          <div class="band-toggle-row">
-            <div v-for="b in bands" :key="b" class="band-toggle">
-              <BaseCheckbox
-                :model-value="getBandSettingByBand(b)!.Enable === 1"
-                :label="b"
-                :disabled="draft.CommonSSIDEnable === 0"
-                :data-testid="qa(`wlan-basic-multi-common-band-enable-${slug(b)}`)"
-                @update:model-value="(v: boolean) => { getBandSettingByBand(b)!.Enable = v ? 1 : 0; }"
-              />
-            </div>
+          <!-- Requirement: In Common SSID mode, this section must have ONLY its own Enable toggle. -->
+          <div class="row-head">
+            <div class="row-title">{{ t('common.enable') }}</div>
+            <BaseCheckbox
+              :model-value="draft.Interface[0].Enable === 1"
+              :label="t('common.enable')"
+              :disabled="draft.CommonSSIDEnable === 0"
+              :data-testid="qa('wlan-basic-multi-common-band-enable')"
+              @update:model-value="(v: boolean) => { draft!.Interface[0].Enable = v ? 1 : 0; }"
+            />
           </div>
 
           <!-- If Common SSID is ON: show single block for SSID/Auth/PSK -->
-          <div v-if="draft.CommonSSIDEnable === 1" class="common-ssid-fields" :data-testid="qa('wlan-basic-multi-common-ssid-fields')">
-            <div class="field">
-              <BaseInput
-                v-model="draft.Interface[0].SSID"
-                :label="t('wireless.ssid')"
-                :disabled="draft.Interface[0].Enable === 0"
-                :data-testid="qa('wlan-basic-multi-common-ssid-ssid')"
-              />
-            </div>
-
-            <div class="field">
-              <BaseSelect
-                v-model="draft.Interface[0].SecurityMode"
-                :label="t('wireless.authentication')"
-                :options="securityModeOptionsForInterface(draft.Interface[0]).map((m) => ({ label: m, value: m }))"
-                :disabled="draft.Interface[0].Enable === 0"
-                :data-testid="qa('wlan-basic-multi-common-ssid-security')"
-              />
-            </div>
-
-            <div class="field">
-              <div class="pass-row">
+          <div
+            v-if="draft.CommonSSIDEnable === 1"
+            class="common-ssid-fields compact-rows"
+            :data-testid="qa('wlan-basic-multi-common-ssid-fields')"
+          >
+            <div class="row row-3">
+              <div class="cell cell-ssid">
                 <BaseInput
-                  v-model="draft.Interface[0].KeyPassPhrase"
-                  :label="t('wireless.password')"
-                  :type="showPassphrase['CommonSSID'] ? 'text' : 'password'"
+                  v-model="draft.Interface[0].SSID"
+                  :label="t('wireless.ssid')"
                   :disabled="draft.Interface[0].Enable === 0"
-                  :data-testid="qa('wlan-basic-multi-common-ssid-psk')"
+                  :data-testid="qa('wlan-basic-multi-common-ssid-ssid')"
                 />
-                <button
-                  type="button"
-                  class="icon-btn"
+              </div>
+
+              <div class="cell cell-auth">
+                <BaseSelect
+                  v-model="draft.Interface[0].SecurityMode"
+                  :label="t('wireless.authentication')"
+                  :options="securityModeOptionsForInterface(draft.Interface[0]).map((m) => ({ label: m, value: m }))"
                   :disabled="draft.Interface[0].Enable === 0"
-                  :data-testid="qa('wlan-basic-multi-common-ssid-psk-toggle')"
-                  @click="showPassphrase['CommonSSID'] = !showPassphrase['CommonSSID']"
-                  :title="showPassphrase['CommonSSID'] ? t('wireless.hide') : t('wireless.show')"
-                >
-                  <span class="material-icons">{{ showPassphrase['CommonSSID'] ? 'visibility_off' : 'visibility' }}</span>
-                </button>
+                  :data-testid="qa('wlan-basic-multi-common-ssid-security')"
+                />
+              </div>
+
+              <div class="cell cell-psk">
+                <div class="pass-row">
+                  <BaseInput
+                    v-model="draft.Interface[0].KeyPassPhrase"
+                    :label="t('wireless.password')"
+                    :type="showPassphrase['CommonSSID'] ? 'text' : 'password'"
+                    :disabled="draft.Interface[0].Enable === 0"
+                    :data-testid="qa('wlan-basic-multi-common-ssid-psk')"
+                  />
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    :disabled="draft.Interface[0].Enable === 0"
+                    :data-testid="qa('wlan-basic-multi-common-ssid-psk-toggle')"
+                    @click="showPassphrase['CommonSSID'] = !showPassphrase['CommonSSID']"
+                    :title="showPassphrase['CommonSSID'] ? t('wireless.hide') : t('wireless.show')"
+                  >
+                    <span class="material-icons">{{ showPassphrase['CommonSSID'] ? 'visibility_off' : 'visibility' }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Per-band interface cards (only when Common SSID is OFF) -->
+        <!-- Per-band interface rows (only when Common SSID is OFF) -->
         <div
           v-if="draft.CommonSSIDEnable === 0"
           class="edit-section"
@@ -453,22 +458,20 @@ onMounted(fetchConfig);
         >
           <div class="section-title">{{ t('wireless.perBandInterfaces') }}</div>
 
-          <div class="interfaces-grid">
-            <BaseCard v-for="b in bands" :key="b" class="iface-card" :data-testid="qa(`wlan-basic-multi-iface-${slug(b)}`)">
-              <template #header>
-                <div class="iface-header">
-                  <div class="iface-title">{{ b }}</div>
-                  <BaseCheckbox
-                    :model-value="getInterfaceByBand(b)!.Enable === 1"
-                    :label="t('common.enable')"
-                    :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)"
-                    @update:model-value="(v: boolean) => { getInterfaceByBand(b)!.Enable = v ? 1 : 0; }"
-                  />
-                </div>
-              </template>
+          <div class="interfaces-rows">
+            <div v-for="b in bands" :key="b" class="iface-row" :data-testid="qa(`wlan-basic-multi-iface-${slug(b)}`)">
+              <div class="row-head">
+                <div class="row-title">{{ b }}</div>
+                <BaseCheckbox
+                  :model-value="getInterfaceByBand(b)!.Enable === 1"
+                  :label="t('common.enable')"
+                  :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)"
+                  @update:model-value="(v: boolean) => { getInterfaceByBand(b)!.Enable = v ? 1 : 0; }"
+                />
+              </div>
 
-              <div class="iface-fields">
-                <div class="field">
+              <div class="row row-3">
+                <div class="cell cell-ssid">
                   <BaseInput
                     v-model="getInterfaceByBand(b)!.SSID"
                     :label="t('wireless.ssid')"
@@ -477,7 +480,7 @@ onMounted(fetchConfig);
                   />
                 </div>
 
-                <div class="field">
+                <div class="cell cell-auth">
                   <BaseSelect
                     v-model="getInterfaceByBand(b)!.SecurityMode"
                     :label="t('wireless.authentication')"
@@ -487,7 +490,7 @@ onMounted(fetchConfig);
                   />
                 </div>
 
-                <div class="field">
+                <div class="cell cell-psk">
                   <div class="pass-row">
                     <BaseInput
                       v-model="getInterfaceByBand(b)!.KeyPassPhrase"
@@ -508,10 +511,10 @@ onMounted(fetchConfig);
                     </button>
                   </div>
                 </div>
-
-                <!-- MFPConfig removed from UI intentionally -->
               </div>
-            </BaseCard>
+
+              <!-- MFPConfig removed from UI intentionally -->
+            </div>
           </div>
         </div>
       </div>
@@ -695,46 +698,51 @@ onMounted(fetchConfig);
   color: var(--text-secondary);
 }
 
-.band-toggle-row {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.common-ssid-fields {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.interfaces-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.iface-card {
-  padding: 0;
-}
-
-.iface-header {
+.row-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 10px;
 }
 
-.iface-title {
-  font-weight: 600;
+.row-title {
   font-size: 13px;
+  font-weight: 600;
 }
 
-.iface-fields {
-  padding: 10px;
+.compact-rows {
+  margin-top: 10px;
+}
+
+.interfaces-rows {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.iface-row {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+/* Row layout: SSID | Authentication | Enabled (toggle is in header) */
+.row {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+}
+
+.row-3 {
+  grid-template-columns: 1.6fr 1fr 1.1fr;
+}
+
+.cell {
+  min-width: 0;
 }
 
 .pass-row {
@@ -773,15 +781,11 @@ onMounted(fetchConfig);
     grid-template-columns: 1fr 0.6fr 0.6fr 0.6fr;
   }
 
-  .interfaces-grid {
-    grid-template-columns: 1fr;
-  }
-
   .fields-grid {
     grid-template-columns: 1fr;
   }
 
-  .common-ssid-fields {
+  .row-3 {
     grid-template-columns: 1fr;
   }
 }
