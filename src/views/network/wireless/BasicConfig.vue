@@ -530,11 +530,12 @@ onMounted(fetchConfig);
               <div class="cell cell-psk">
                 <div class="pass-row">
                   <BaseInput
-                    v-model="draft.Interface[0].KeyPassPhrase"
+                    :modelValue="draft.Interface[0].KeyPassPhrase ?? ''"
                     :label="t('wireless.password')"
                     :type="showPassphrase['CommonSSID'] ? 'text' : 'password'"
                     :disabled="draft.Interface[0].Enable === 0"
                     :data-testid="qa('wlan-basic-multi-common-ssid-psk')"
+                    @update:modelValue="(v) => { draft!.Interface[0].KeyPassPhrase = String(v ?? ''); }"
                   />
                   <button
                     type="button"
@@ -609,11 +610,12 @@ onMounted(fetchConfig);
                 <div class="cell cell-psk">
                   <div class="pass-row">
                     <BaseInput
-                      v-model="getInterfaceByBand(b)!.KeyPassPhrase"
+                      :modelValue="getInterfaceByBand(b)!.KeyPassPhrase ?? ''"
                       :label="t('wireless.password')"
                       :type="showPassphrase[b] ? 'text' : 'password'"
                       :disabled="getInterfaceByBand(b)!.Enable === 0"
                       :data-testid="qa(`wlan-basic-multi-iface-psk-${slug(b)}`)"
+                      @update:modelValue="(v) => { getInterfaceByBand(b)!.KeyPassPhrase = String(v ?? ''); }"
                     />
                     <button
                       type="button"
