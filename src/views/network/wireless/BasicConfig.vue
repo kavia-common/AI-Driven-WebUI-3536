@@ -28,6 +28,12 @@ const showBlockingOverlay = ref(false);
 
 const data = ref<WlanBasicMultiGetResponse | null>(null);
 
+/**
+ * Snapshot of the last successful GET response.
+ * Used by non-edit-mode "Cancel" to restore UI to the backend state.
+ */
+const lastGetSnapshot = ref<WlanBasicMultiGetResponse | null>(null);
+
 const editIndex = ref<number | null>(null);
 const draft = ref<WlanGroup | null>(null);
 const showPassphrase = reactive<Record<string, boolean>>({});
@@ -123,6 +129,9 @@ const fetchConfig = async () => {
         }
       };
     }
+
+    // Capture last successful GET snapshot for non-edit "Cancel"
+    lastGetSnapshot.value = JSON.parse(JSON.stringify(data.value));
   } catch (e) {
     console.error('Error fetching WLAN Basic (multi) config:', e);
   } finally {
@@ -140,7 +149,9 @@ const summarizeGroup = (g: WlanGroup) => {
   return `${t('wireless.commonSsidShort')}: ${common} • ${t('wireless.mloShort')}: ${mlo} • ${bandInfo}`;
 };
 
-const startEdit = (index: number) => {
+// PUBLIC_INTERFACE
+const enterEdit = (index: number) => {
+  /** Enter edit mode for a given SSID group index. */
   editIndex.value = index;
   draft.value = normalizeGroup(JSON.parse(JSON.stringify(groups.value[index])));
   // Reset passphrase visibility state in edit mode
@@ -150,15 +161,58 @@ const startEdit = (index: number) => {
   showPassphrase['CommonSSID'] = false;
 };
 
+// PUBLIC_INTERFACE
 const cancelEdit = () => {
+  /** Exit edit mode and discard draft changes. */
   editIndex.value = null;
   draft.value = null;
+};
+
+// PUBLIC_INTERFACE
+const updateLocal = () => {
+  /**
+   * Apply draft changes back to the table/grid view (local state only),
+   * without issuing a POST; then exit edit mode.
+   */
+  if (!data.value || editIndex.value === null || !draft.value) return;
+  const idx = editIndex.value;
+
+  // Normalize to ensure band/interface entries exist
+  const normalized = normalizeGroup(JSON.parse(JSON.stringify(draft.value)));
+
+  // Keep backend shape consistent: when Common SSID is enabled, ensure all interfaces match the single edited block
+  if (normalized.CommonSSIDEnable === 1 && normalized.Interface.length > 0) {
+    const base = normalized.Interface[0];
+    for (const itf of normalized.Interface) {
+      itf.SSID = base.SSID;
+      itf.SecurityMode = base.SecurityMode;
+      itf.KeyPassPhrase = base.KeyPassPhrase;
+      // Enable in Common mode is controlled by Interface[0].Enable in this UI; mirror it across to be safe
+      itf.Enable = base.Enable;
+    }
+  }
+
+  data.value.WlanBasic.WlanGroup[idx] = normalized;
+  cancelEdit();
+};
+
+// PUBLIC_INTERFACE
+const restoreFromGet = () => {
+  /**
+   * Non-edit-mode "Cancel": restore local UI state to the last successful GET response.
+   * Does not call backend.
+   */
+  if (!lastGetSnapshot.value) return;
+  data.value = JSON.parse(JSON.stringify(lastGetSnapshot.value));
 };
 
 const securityModeOptionsForInterface = (itf: WlanGroupInterface): string[] => {
   const csv = (itf.SecurityModeAvailable ?? '').trim();
   if (!csv) return [];
-  return csv.split(',').map((s) => s.trim()).filter(Boolean);
+  return csv
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 };
 
 const getInterfaceByBand = (band: string): WlanGroupInterface | undefined => {
@@ -184,6 +238,7 @@ const onCommonSsidToggle = () => {
       itf.SSID = first.SSID;
       itf.SecurityMode = first.SecurityMode;
       itf.KeyPassPhrase = first.KeyPassPhrase;
+      itf.Enable = first.Enable;
     }
   }
 };
@@ -196,10 +251,8 @@ const onCommonSsidToggle = () => {
 const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
   if (!data.value) return null;
 
-  // If editing, use edited group; else, post current data
-  const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g, idx) => {
-    const src = editIndex.value === idx && draft.value ? draft.value : g;
-    const norm = normalizeGroup(src);
+  const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g) => {
+    const norm = normalizeGroup(g);
 
     // When Common SSID is enabled, the UI edits only a single block; ensure all interfaces share those values.
     if (norm.CommonSSIDEnable === 1 && norm.Interface.length > 0) {
@@ -208,6 +261,7 @@ const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
         itf.SSID = base.SSID;
         itf.SecurityMode = base.SecurityMode;
         itf.KeyPassPhrase = base.KeyPassPhrase;
+        itf.Enable = base.Enable;
       }
     }
 
@@ -240,7 +294,12 @@ const showSuccessMessage = () => {
   setTimeout(() => (showSuccess.value = false), 2500);
 };
 
-const submit = async () => {
+// PUBLIC_INTERFACE
+const applyPost = async () => {
+  /**
+   * Non-edit-mode "Apply": POST current local state to backend in WlanGroup + Interface structure.
+   * Shows success feedback consistent with the rest of this page.
+   */
   const payload = buildPostPayload();
   if (!payload) return;
 
@@ -249,11 +308,13 @@ const submit = async () => {
     await updateWlanBasicMulti(payload);
     showSuccessMessage();
     showBlockingOverlay.value = true;
+
+    // After successful apply, treat current state as the new baseline for non-edit cancel.
+    lastGetSnapshot.value = JSON.parse(JSON.stringify(data.value));
   } catch (e) {
     console.error('Error updating WLAN Basic (multi) config:', e);
   } finally {
     loading.value = false;
-    cancelEdit();
   }
 };
 
@@ -275,20 +336,16 @@ onMounted(fetchConfig);
       {{ t('common.apply') }} {{ t('common.saveSuccess') }}
     </div>
 
-    <!-- Compact list view -->
-    <BaseCard class="compact-card" :data-testid="qa('wlan-basic-multi-list-card')">
+    <!-- Compact list view (hidden while editing) -->
+    <BaseCard
+      v-if="editIndex === null"
+      class="compact-card"
+      :data-testid="qa('wlan-basic-multi-list-card')"
+    >
       <template #header>
         <div class="card-header-row">
           <div class="card-title">{{ t('wireless.basicConfig') }}</div>
-          <BaseButton
-            variant="secondary"
-            size="sm"
-            :disabled="loading"
-            :data-testid="qa('wlan-basic-multi-refresh')"
-            @click="fetchConfig"
-          >
-            {{ t('common.refresh') }}
-          </BaseButton>
+          <!-- Refresh button removed per requirements -->
         </div>
       </template>
 
@@ -323,7 +380,7 @@ onMounted(fetchConfig);
               variant="primary"
               size="sm"
               :data-testid="qa(`wlan-basic-multi-edit-${idx}`)"
-              @click="startEdit(idx)"
+              @click="enterEdit(idx)"
             >
               {{ t('common.edit') }}
             </BaseButton>
@@ -334,24 +391,26 @@ onMounted(fetchConfig);
           {{ t('wireless.noSsidGroups') }}
         </div>
       </div>
+
+      <!-- Non-edit footer actions: Cancel restores last GET, Apply posts -->
+      <div class="footer-actions">
+        <BaseButton variant="secondary" :data-testid="qa('wlan-basic-multi-view-cancel')" @click="restoreFromGet">
+          {{ t('common.cancel') }}
+        </BaseButton>
+        <BaseButton variant="primary" :disabled="loading" :data-testid="qa('wlan-basic-multi-view-apply')" @click="applyPost">
+          {{ t('common.apply') }}
+        </BaseButton>
+      </div>
     </BaseCard>
 
-    <!-- Edit mode -->
+    <!-- Edit mode (Basic Config list is hidden while this is shown) -->
     <BaseCard v-if="draft && editIndex !== null" class="compact-card edit-card" :data-testid="qa('wlan-basic-multi-edit-card')">
       <template #header>
         <div class="card-header-row">
           <div class="card-title">
             {{ t('common.edit') }}: {{ draft.SSIDGroupName }}
           </div>
-
-          <div class="header-actions">
-            <BaseButton variant="secondary" size="sm" :data-testid="qa('wlan-basic-multi-edit-cancel-top')" @click="cancelEdit">
-              {{ t('common.cancel') }}
-            </BaseButton>
-            <BaseButton variant="primary" size="sm" :data-testid="qa('wlan-basic-multi-edit-apply-top')" @click="submit">
-              {{ t('common.apply') }}
-            </BaseButton>
-          </div>
+          <!-- Inline header actions removed per requirements -->
         </div>
       </template>
 
@@ -466,6 +525,12 @@ onMounted(fetchConfig);
               </div>
             </div>
           </div>
+
+          <!-- Kept: CommonSSIDBandSetting data is still preserved in payload via normalizeGroup/buildPostPayload.
+               UI intentionally does not expose per-band toggles here to preserve compact design rules. -->
+          <div v-if="false">
+            {{ getBandSettingByBand('2.4GHz')?.Enable }}
+          </div>
         </div>
 
         <!-- Per-band interface rows (only when Common SSID is OFF) -->
@@ -543,12 +608,13 @@ onMounted(fetchConfig);
         </div>
       </div>
 
+      <!-- Edit footer actions: Cancel (discard) + Update (local-only, no POST) -->
       <div class="footer-actions">
         <BaseButton variant="secondary" :data-testid="qa('wlan-basic-multi-edit-cancel')" @click="cancelEdit">
           {{ t('common.cancel') }}
         </BaseButton>
-        <BaseButton variant="primary" :data-testid="qa('wlan-basic-multi-edit-apply')" @click="submit">
-          {{ t('common.apply') }}
+        <BaseButton variant="primary" :data-testid="qa('wlan-basic-multi-edit-update')" @click="updateLocal">
+          {{ t('common.update') }}
         </BaseButton>
       </div>
     </BaseCard>
