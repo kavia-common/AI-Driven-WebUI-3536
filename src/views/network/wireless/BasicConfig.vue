@@ -376,14 +376,14 @@ onMounted(fetchConfig);
           </div>
 
           <div class="col col-actions">
-            <BaseButton
-              variant="primary"
-              size="sm"
+            <button
+              class="btn-action"
               :data-testid="qa(`wlan-basic-multi-edit-${idx}`)"
+              :title="t('common.edit')"
               @click="enterEdit(idx)"
             >
-              {{ t('common.edit') }}
-            </BaseButton>
+              <span class="material-icons">edit</span>
+            </button>
           </div>
         </div>
 
@@ -948,6 +948,24 @@ onMounted(fetchConfig);
   justify-content: flex-end;
   gap: 10px;
   padding: 0 12px 12px;
+}
+
+/* Match Port Forwarding action icon button exactly */
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-action:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 @media (max-width: 960px) {
