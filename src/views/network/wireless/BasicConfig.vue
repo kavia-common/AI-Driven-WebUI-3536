@@ -147,6 +147,7 @@ const startEdit = (index: number) => {
   for (const b of bands) {
     showPassphrase[`${b}`] = false;
   }
+  showPassphrase['CommonSSID'] = false;
 };
 
 const cancelEdit = () => {
@@ -173,9 +174,25 @@ const onCommonSsidToggle = () => {
   if (draft.value.CommonSSIDEnable === 0) {
     // When disabling Common SSID, also disable MLO
     draft.value.MLOEnable = 0;
+  } else {
+    // When enabling Common SSID, keep the UI consistent by propagating
+    // the first band's SSID/security/PSK to all bands (user edits are done in a single block).
+    const first = draft.value.Interface?.[0];
+    if (!first) return;
+
+    for (const itf of draft.value.Interface) {
+      itf.SSID = first.SSID;
+      itf.SecurityMode = first.SecurityMode;
+      itf.KeyPassPhrase = first.KeyPassPhrase;
+    }
   }
 };
 
+/**
+ * Keep the backend payload shape intact.
+ * UI may hide some fields (e.g., MFPConfig), but we still preserve values from the loaded config
+ * and post them back unchanged unless the backend chooses to ignore them.
+ */
 const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
   if (!data.value) return null;
 
@@ -183,6 +200,16 @@ const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
   const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g, idx) => {
     const src = editIndex.value === idx && draft.value ? draft.value : g;
     const norm = normalizeGroup(src);
+
+    // When Common SSID is enabled, the UI edits only a single block; ensure all interfaces share those values.
+    if (norm.CommonSSIDEnable === 1 && norm.Interface.length > 0) {
+      const base = norm.Interface[0];
+      for (const itf of norm.Interface) {
+        itf.SSID = base.SSID;
+        itf.SecurityMode = base.SecurityMode;
+        itf.KeyPassPhrase = base.KeyPassPhrase;
+      }
+    }
 
     return {
       SSIDGroupName: norm.SSIDGroupName,
@@ -199,6 +226,7 @@ const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
         SecurityMode: i.SecurityMode,
         // Prefer KeyPassPhrase, but allow fallback from WpaPreShareKey
         KeyPassPhrase: (i.KeyPassPhrase ?? i.WpaPreShareKey ?? '').toString(),
+        // MFPConfig is removed from the UI but preserved in payload for compatibility.
         MFPConfig: i.MFPConfig
       }))
     };
@@ -359,6 +387,7 @@ onMounted(fetchConfig);
         <div class="edit-section" :data-testid="qa('wlan-basic-multi-common-band-section')">
           <div class="section-title">{{ t('wireless.commonSsidBandSettings') }}</div>
 
+          <!-- Band toggles always shown here; disabled when Common SSID is off -->
           <div class="band-toggle-row">
             <div v-for="b in bands" :key="b" class="band-toggle">
               <BaseCheckbox
@@ -370,10 +399,58 @@ onMounted(fetchConfig);
               />
             </div>
           </div>
+
+          <!-- If Common SSID is ON: show single block for SSID/Auth/PSK -->
+          <div v-if="draft.CommonSSIDEnable === 1" class="common-ssid-fields" :data-testid="qa('wlan-basic-multi-common-ssid-fields')">
+            <div class="field">
+              <BaseInput
+                v-model="draft.Interface[0].SSID"
+                :label="t('wireless.ssid')"
+                :disabled="draft.Interface[0].Enable === 0"
+                :data-testid="qa('wlan-basic-multi-common-ssid-ssid')"
+              />
+            </div>
+
+            <div class="field">
+              <BaseSelect
+                v-model="draft.Interface[0].SecurityMode"
+                :label="t('wireless.authentication')"
+                :options="securityModeOptionsForInterface(draft.Interface[0]).map((m) => ({ label: m, value: m }))"
+                :disabled="draft.Interface[0].Enable === 0"
+                :data-testid="qa('wlan-basic-multi-common-ssid-security')"
+              />
+            </div>
+
+            <div class="field">
+              <div class="pass-row">
+                <BaseInput
+                  v-model="draft.Interface[0].KeyPassPhrase"
+                  :label="t('wireless.password')"
+                  :type="showPassphrase['CommonSSID'] ? 'text' : 'password'"
+                  :disabled="draft.Interface[0].Enable === 0"
+                  :data-testid="qa('wlan-basic-multi-common-ssid-psk')"
+                />
+                <button
+                  type="button"
+                  class="icon-btn"
+                  :disabled="draft.Interface[0].Enable === 0"
+                  :data-testid="qa('wlan-basic-multi-common-ssid-psk-toggle')"
+                  @click="showPassphrase['CommonSSID'] = !showPassphrase['CommonSSID']"
+                  :title="showPassphrase['CommonSSID'] ? t('wireless.hide') : t('wireless.show')"
+                >
+                  <span class="material-icons">{{ showPassphrase['CommonSSID'] ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Per-band interface cards -->
-        <div class="edit-section" :data-testid="qa('wlan-basic-multi-interfaces-section')">
+        <!-- Per-band interface cards (only when Common SSID is OFF) -->
+        <div
+          v-if="draft.CommonSSIDEnable === 0"
+          class="edit-section"
+          :data-testid="qa('wlan-basic-multi-interfaces-section')"
+        >
           <div class="section-title">{{ t('wireless.perBandInterfaces') }}</div>
 
           <div class="interfaces-grid">
@@ -432,14 +509,7 @@ onMounted(fetchConfig);
                   </div>
                 </div>
 
-                <div class="field">
-                  <BaseInput
-                    v-model="getInterfaceByBand(b)!.MFPConfig"
-                    :label="t('wireless.mfpConfig')"
-                    :disabled="getInterfaceByBand(b)!.Enable === 0"
-                    :data-testid="qa(`wlan-basic-multi-iface-mfp-${slug(b)}`)"
-                  />
-                </div>
+                <!-- MFPConfig removed from UI intentionally -->
               </div>
             </BaseCard>
           </div>
@@ -631,6 +701,13 @@ onMounted(fetchConfig);
   flex-wrap: wrap;
 }
 
+.common-ssid-fields {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .interfaces-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -701,6 +778,10 @@ onMounted(fetchConfig);
   }
 
   .fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .common-ssid-fields {
     grid-template-columns: 1fr;
   }
 }

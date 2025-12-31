@@ -131,6 +131,7 @@ const startEdit = (index) => {
     for (const b of bands) {
         showPassphrase[`${b}`] = false;
     }
+    showPassphrase['CommonSSID'] = false;
 };
 const cancelEdit = () => {
     editIndex.value = null;
@@ -155,7 +156,24 @@ const onCommonSsidToggle = () => {
         // When disabling Common SSID, also disable MLO
         draft.value.MLOEnable = 0;
     }
+    else {
+        // When enabling Common SSID, keep the UI consistent by propagating
+        // the first band's SSID/security/PSK to all bands (user edits are done in a single block).
+        const first = draft.value.Interface?.[0];
+        if (!first)
+            return;
+        for (const itf of draft.value.Interface) {
+            itf.SSID = first.SSID;
+            itf.SecurityMode = first.SecurityMode;
+            itf.KeyPassPhrase = first.KeyPassPhrase;
+        }
+    }
 };
+/**
+ * Keep the backend payload shape intact.
+ * UI may hide some fields (e.g., MFPConfig), but we still preserve values from the loaded config
+ * and post them back unchanged unless the backend chooses to ignore them.
+ */
 const buildPostPayload = () => {
     if (!data.value)
         return null;
@@ -163,6 +181,15 @@ const buildPostPayload = () => {
     const postGroups = groups.value.map((g, idx) => {
         const src = editIndex.value === idx && draft.value ? draft.value : g;
         const norm = normalizeGroup(src);
+        // When Common SSID is enabled, the UI edits only a single block; ensure all interfaces share those values.
+        if (norm.CommonSSIDEnable === 1 && norm.Interface.length > 0) {
+            const base = norm.Interface[0];
+            for (const itf of norm.Interface) {
+                itf.SSID = base.SSID;
+                itf.SecurityMode = base.SecurityMode;
+                itf.KeyPassPhrase = base.KeyPassPhrase;
+            }
+        }
         return {
             SSIDGroupName: norm.SSIDGroupName,
             CommonSSIDEnable: norm.CommonSSIDEnable,
@@ -178,6 +205,7 @@ const buildPostPayload = () => {
                 SecurityMode: i.SecurityMode,
                 // Prefer KeyPassPhrase, but allow fallback from WpaPreShareKey
                 KeyPassPhrase: (i.KeyPassPhrase ?? i.WpaPreShareKey ?? '').toString(),
+                // MFPConfig is removed from the UI but preserved in payload for compatibility.
                 MFPConfig: i.MFPConfig
             }))
         };
@@ -226,6 +254,7 @@ let __VLS_directives;
 /** @type {__VLS_StyleScopedClasses['group-table-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['interfaces-grid']} */ ;
 /** @type {__VLS_StyleScopedClasses['fields-grid']} */ ;
+/** @type {__VLS_StyleScopedClasses['common-ssid-fields']} */ ;
 // CSS variable injection 
 // CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -569,101 +598,47 @@ if (__VLS_ctx.draft && __VLS_ctx.editIndex !== null) {
         };
         var __VLS_50;
     }
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "edit-section" },
-        'data-testid': (__VLS_ctx.qa('wlan-basic-multi-interfaces-section')),
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "section-title" },
-    });
-    (__VLS_ctx.t('wireless.perBandInterfaces'));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "interfaces-grid" },
-    });
-    for (const [b] of __VLS_getVForSourceType((__VLS_ctx.bands))) {
-        /** @type {[typeof BaseCard, typeof BaseCard, ]} */ ;
-        // @ts-ignore
-        const __VLS_55 = __VLS_asFunctionalComponent(BaseCard, new BaseCard({
-            key: (b),
-            ...{ class: "iface-card" },
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-${__VLS_ctx.slug(b)}`)),
-        }));
-        const __VLS_56 = __VLS_55({
-            key: (b),
-            ...{ class: "iface-card" },
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-${__VLS_ctx.slug(b)}`)),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_55));
-        __VLS_57.slots.default;
-        {
-            const { header: __VLS_thisSlot } = __VLS_57.slots;
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-                ...{ class: "iface-header" },
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-                ...{ class: "iface-title" },
-            });
-            (b);
-            /** @type {[typeof BaseCheckbox, ]} */ ;
-            // @ts-ignore
-            const __VLS_58 = __VLS_asFunctionalComponent(BaseCheckbox, new BaseCheckbox({
-                ...{ 'onUpdate:modelValue': {} },
-                modelValue: (__VLS_ctx.getInterfaceByBand(b).Enable === 1),
-                label: (__VLS_ctx.t('common.enable')),
-                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-enable-${__VLS_ctx.slug(b)}`)),
-            }));
-            const __VLS_59 = __VLS_58({
-                ...{ 'onUpdate:modelValue': {} },
-                modelValue: (__VLS_ctx.getInterfaceByBand(b).Enable === 1),
-                label: (__VLS_ctx.t('common.enable')),
-                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-enable-${__VLS_ctx.slug(b)}`)),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_58));
-            let __VLS_61;
-            let __VLS_62;
-            let __VLS_63;
-            const __VLS_64 = {
-                'onUpdate:modelValue': ((v) => { __VLS_ctx.getInterfaceByBand(b).Enable = v ? 1 : 0; })
-            };
-            var __VLS_60;
-        }
+    if (__VLS_ctx.draft.CommonSSIDEnable === 1) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "iface-fields" },
+            ...{ class: "common-ssid-fields" },
+            'data-testid': (__VLS_ctx.qa('wlan-basic-multi-common-ssid-fields')),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "field" },
         });
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
-        const __VLS_65 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).SSID),
+        const __VLS_55 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
+            modelValue: (__VLS_ctx.draft.Interface[0].SSID),
             label: (__VLS_ctx.t('wireless.ssid')),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-ssid-${__VLS_ctx.slug(b)}`)),
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-ssid-ssid')),
         }));
-        const __VLS_66 = __VLS_65({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).SSID),
+        const __VLS_56 = __VLS_55({
+            modelValue: (__VLS_ctx.draft.Interface[0].SSID),
             label: (__VLS_ctx.t('wireless.ssid')),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-ssid-${__VLS_ctx.slug(b)}`)),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_65));
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-ssid-ssid')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_55));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "field" },
         });
         /** @type {[typeof BaseSelect, ]} */ ;
         // @ts-ignore
-        const __VLS_68 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).SecurityMode),
+        const __VLS_58 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
+            modelValue: (__VLS_ctx.draft.Interface[0].SecurityMode),
             label: (__VLS_ctx.t('wireless.authentication')),
-            options: (__VLS_ctx.securityModeOptionsForInterface(__VLS_ctx.getInterfaceByBand(b)).map((m) => ({ label: m, value: m }))),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-security-${__VLS_ctx.slug(b)}`)),
+            options: (__VLS_ctx.securityModeOptionsForInterface(__VLS_ctx.draft.Interface[0]).map((m) => ({ label: m, value: m }))),
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-ssid-security')),
         }));
-        const __VLS_69 = __VLS_68({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).SecurityMode),
+        const __VLS_59 = __VLS_58({
+            modelValue: (__VLS_ctx.draft.Interface[0].SecurityMode),
             label: (__VLS_ctx.t('wireless.authentication')),
-            options: (__VLS_ctx.securityModeOptionsForInterface(__VLS_ctx.getInterfaceByBand(b)).map((m) => ({ label: m, value: m }))),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-security-${__VLS_ctx.slug(b)}`)),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_68));
+            options: (__VLS_ctx.securityModeOptionsForInterface(__VLS_ctx.draft.Interface[0]).map((m) => ({ label: m, value: m }))),
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-ssid-security')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_58));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "field" },
         });
@@ -672,125 +647,248 @@ if (__VLS_ctx.draft && __VLS_ctx.editIndex !== null) {
         });
         /** @type {[typeof BaseInput, ]} */ ;
         // @ts-ignore
-        const __VLS_71 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).KeyPassPhrase),
+        const __VLS_61 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
+            modelValue: (__VLS_ctx.draft.Interface[0].KeyPassPhrase),
             label: (__VLS_ctx.t('wireless.password')),
-            type: (__VLS_ctx.showPassphrase[b] ? 'text' : 'password'),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-psk-${__VLS_ctx.slug(b)}`)),
+            type: (__VLS_ctx.showPassphrase['CommonSSID'] ? 'text' : 'password'),
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-ssid-psk')),
         }));
-        const __VLS_72 = __VLS_71({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).KeyPassPhrase),
+        const __VLS_62 = __VLS_61({
+            modelValue: (__VLS_ctx.draft.Interface[0].KeyPassPhrase),
             label: (__VLS_ctx.t('wireless.password')),
-            type: (__VLS_ctx.showPassphrase[b] ? 'text' : 'password'),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-psk-${__VLS_ctx.slug(b)}`)),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_71));
+            type: (__VLS_ctx.showPassphrase['CommonSSID'] ? 'text' : 'password'),
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            dataTestid: (__VLS_ctx.qa('wlan-basic-multi-common-ssid-psk')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_61));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
             ...{ onClick: (...[$event]) => {
                     if (!(__VLS_ctx.draft && __VLS_ctx.editIndex !== null))
                         return;
-                    __VLS_ctx.showPassphrase[b] = !__VLS_ctx.showPassphrase[b];
+                    if (!(__VLS_ctx.draft.CommonSSIDEnable === 1))
+                        return;
+                    __VLS_ctx.showPassphrase['CommonSSID'] = !__VLS_ctx.showPassphrase['CommonSSID'];
                 } },
             type: "button",
             ...{ class: "icon-btn" },
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            'data-testid': (__VLS_ctx.qa(`wlan-basic-multi-iface-psk-toggle-${__VLS_ctx.slug(b)}`)),
-            title: (__VLS_ctx.showPassphrase[b] ? __VLS_ctx.t('wireless.hide') : __VLS_ctx.t('wireless.show')),
+            disabled: (__VLS_ctx.draft.Interface[0].Enable === 0),
+            'data-testid': (__VLS_ctx.qa('wlan-basic-multi-common-ssid-psk-toggle')),
+            title: (__VLS_ctx.showPassphrase['CommonSSID'] ? __VLS_ctx.t('wireless.hide') : __VLS_ctx.t('wireless.show')),
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "material-icons" },
         });
-        (__VLS_ctx.showPassphrase[b] ? 'visibility_off' : 'visibility');
+        (__VLS_ctx.showPassphrase['CommonSSID'] ? 'visibility_off' : 'visibility');
+    }
+    if (__VLS_ctx.draft.CommonSSIDEnable === 0) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "field" },
+            ...{ class: "edit-section" },
+            'data-testid': (__VLS_ctx.qa('wlan-basic-multi-interfaces-section')),
         });
-        /** @type {[typeof BaseInput, ]} */ ;
-        // @ts-ignore
-        const __VLS_74 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).MFPConfig),
-            label: (__VLS_ctx.t('wireless.mfpConfig')),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-mfp-${__VLS_ctx.slug(b)}`)),
-        }));
-        const __VLS_75 = __VLS_74({
-            modelValue: (__VLS_ctx.getInterfaceByBand(b).MFPConfig),
-            label: (__VLS_ctx.t('wireless.mfpConfig')),
-            disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
-            dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-mfp-${__VLS_ctx.slug(b)}`)),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_74));
-        var __VLS_57;
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "section-title" },
+        });
+        (__VLS_ctx.t('wireless.perBandInterfaces'));
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "interfaces-grid" },
+        });
+        for (const [b] of __VLS_getVForSourceType((__VLS_ctx.bands))) {
+            /** @type {[typeof BaseCard, typeof BaseCard, ]} */ ;
+            // @ts-ignore
+            const __VLS_64 = __VLS_asFunctionalComponent(BaseCard, new BaseCard({
+                key: (b),
+                ...{ class: "iface-card" },
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-${__VLS_ctx.slug(b)}`)),
+            }));
+            const __VLS_65 = __VLS_64({
+                key: (b),
+                ...{ class: "iface-card" },
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-${__VLS_ctx.slug(b)}`)),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_64));
+            __VLS_66.slots.default;
+            {
+                const { header: __VLS_thisSlot } = __VLS_66.slots;
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                    ...{ class: "iface-header" },
+                });
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                    ...{ class: "iface-title" },
+                });
+                (b);
+                /** @type {[typeof BaseCheckbox, ]} */ ;
+                // @ts-ignore
+                const __VLS_67 = __VLS_asFunctionalComponent(BaseCheckbox, new BaseCheckbox({
+                    ...{ 'onUpdate:modelValue': {} },
+                    modelValue: (__VLS_ctx.getInterfaceByBand(b).Enable === 1),
+                    label: (__VLS_ctx.t('common.enable')),
+                    dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-enable-${__VLS_ctx.slug(b)}`)),
+                }));
+                const __VLS_68 = __VLS_67({
+                    ...{ 'onUpdate:modelValue': {} },
+                    modelValue: (__VLS_ctx.getInterfaceByBand(b).Enable === 1),
+                    label: (__VLS_ctx.t('common.enable')),
+                    dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-enable-${__VLS_ctx.slug(b)}`)),
+                }, ...__VLS_functionalComponentArgsRest(__VLS_67));
+                let __VLS_70;
+                let __VLS_71;
+                let __VLS_72;
+                const __VLS_73 = {
+                    'onUpdate:modelValue': ((v) => { __VLS_ctx.getInterfaceByBand(b).Enable = v ? 1 : 0; })
+                };
+                var __VLS_69;
+            }
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "iface-fields" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "field" },
+            });
+            /** @type {[typeof BaseInput, ]} */ ;
+            // @ts-ignore
+            const __VLS_74 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
+                modelValue: (__VLS_ctx.getInterfaceByBand(b).SSID),
+                label: (__VLS_ctx.t('wireless.ssid')),
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-ssid-${__VLS_ctx.slug(b)}`)),
+            }));
+            const __VLS_75 = __VLS_74({
+                modelValue: (__VLS_ctx.getInterfaceByBand(b).SSID),
+                label: (__VLS_ctx.t('wireless.ssid')),
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-ssid-${__VLS_ctx.slug(b)}`)),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_74));
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "field" },
+            });
+            /** @type {[typeof BaseSelect, ]} */ ;
+            // @ts-ignore
+            const __VLS_77 = __VLS_asFunctionalComponent(BaseSelect, new BaseSelect({
+                modelValue: (__VLS_ctx.getInterfaceByBand(b).SecurityMode),
+                label: (__VLS_ctx.t('wireless.authentication')),
+                options: (__VLS_ctx.securityModeOptionsForInterface(__VLS_ctx.getInterfaceByBand(b)).map((m) => ({ label: m, value: m }))),
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-security-${__VLS_ctx.slug(b)}`)),
+            }));
+            const __VLS_78 = __VLS_77({
+                modelValue: (__VLS_ctx.getInterfaceByBand(b).SecurityMode),
+                label: (__VLS_ctx.t('wireless.authentication')),
+                options: (__VLS_ctx.securityModeOptionsForInterface(__VLS_ctx.getInterfaceByBand(b)).map((m) => ({ label: m, value: m }))),
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-security-${__VLS_ctx.slug(b)}`)),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_77));
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "field" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "pass-row" },
+            });
+            /** @type {[typeof BaseInput, ]} */ ;
+            // @ts-ignore
+            const __VLS_80 = __VLS_asFunctionalComponent(BaseInput, new BaseInput({
+                modelValue: (__VLS_ctx.getInterfaceByBand(b).KeyPassPhrase),
+                label: (__VLS_ctx.t('wireless.password')),
+                type: (__VLS_ctx.showPassphrase[b] ? 'text' : 'password'),
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-psk-${__VLS_ctx.slug(b)}`)),
+            }));
+            const __VLS_81 = __VLS_80({
+                modelValue: (__VLS_ctx.getInterfaceByBand(b).KeyPassPhrase),
+                label: (__VLS_ctx.t('wireless.password')),
+                type: (__VLS_ctx.showPassphrase[b] ? 'text' : 'password'),
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                dataTestid: (__VLS_ctx.qa(`wlan-basic-multi-iface-psk-${__VLS_ctx.slug(b)}`)),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_80));
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+                ...{ onClick: (...[$event]) => {
+                        if (!(__VLS_ctx.draft && __VLS_ctx.editIndex !== null))
+                            return;
+                        if (!(__VLS_ctx.draft.CommonSSIDEnable === 0))
+                            return;
+                        __VLS_ctx.showPassphrase[b] = !__VLS_ctx.showPassphrase[b];
+                    } },
+                type: "button",
+                ...{ class: "icon-btn" },
+                disabled: (__VLS_ctx.getInterfaceByBand(b).Enable === 0),
+                'data-testid': (__VLS_ctx.qa(`wlan-basic-multi-iface-psk-toggle-${__VLS_ctx.slug(b)}`)),
+                title: (__VLS_ctx.showPassphrase[b] ? __VLS_ctx.t('wireless.hide') : __VLS_ctx.t('wireless.show')),
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                ...{ class: "material-icons" },
+            });
+            (__VLS_ctx.showPassphrase[b] ? 'visibility_off' : 'visibility');
+            var __VLS_66;
+        }
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "footer-actions" },
     });
     /** @type {[typeof BaseButton, typeof BaseButton, ]} */ ;
     // @ts-ignore
-    const __VLS_77 = __VLS_asFunctionalComponent(BaseButton, new BaseButton({
+    const __VLS_83 = __VLS_asFunctionalComponent(BaseButton, new BaseButton({
         ...{ 'onClick': {} },
         variant: "secondary",
         dataTestid: (__VLS_ctx.qa('wlan-basic-multi-edit-cancel')),
     }));
-    const __VLS_78 = __VLS_77({
+    const __VLS_84 = __VLS_83({
         ...{ 'onClick': {} },
         variant: "secondary",
         dataTestid: (__VLS_ctx.qa('wlan-basic-multi-edit-cancel')),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_77));
-    let __VLS_80;
-    let __VLS_81;
-    let __VLS_82;
-    const __VLS_83 = {
-        onClick: (__VLS_ctx.cancelEdit)
-    };
-    __VLS_79.slots.default;
-    (__VLS_ctx.t('common.cancel'));
-    var __VLS_79;
-    /** @type {[typeof BaseButton, typeof BaseButton, ]} */ ;
-    // @ts-ignore
-    const __VLS_84 = __VLS_asFunctionalComponent(BaseButton, new BaseButton({
-        ...{ 'onClick': {} },
-        variant: "primary",
-        dataTestid: (__VLS_ctx.qa('wlan-basic-multi-edit-apply')),
-    }));
-    const __VLS_85 = __VLS_84({
-        ...{ 'onClick': {} },
-        variant: "primary",
-        dataTestid: (__VLS_ctx.qa('wlan-basic-multi-edit-apply')),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_84));
+    }, ...__VLS_functionalComponentArgsRest(__VLS_83));
+    let __VLS_86;
     let __VLS_87;
     let __VLS_88;
-    let __VLS_89;
-    const __VLS_90 = {
+    const __VLS_89 = {
+        onClick: (__VLS_ctx.cancelEdit)
+    };
+    __VLS_85.slots.default;
+    (__VLS_ctx.t('common.cancel'));
+    var __VLS_85;
+    /** @type {[typeof BaseButton, typeof BaseButton, ]} */ ;
+    // @ts-ignore
+    const __VLS_90 = __VLS_asFunctionalComponent(BaseButton, new BaseButton({
+        ...{ 'onClick': {} },
+        variant: "primary",
+        dataTestid: (__VLS_ctx.qa('wlan-basic-multi-edit-apply')),
+    }));
+    const __VLS_91 = __VLS_90({
+        ...{ 'onClick': {} },
+        variant: "primary",
+        dataTestid: (__VLS_ctx.qa('wlan-basic-multi-edit-apply')),
+    }, ...__VLS_functionalComponentArgsRest(__VLS_90));
+    let __VLS_93;
+    let __VLS_94;
+    let __VLS_95;
+    const __VLS_96 = {
         onClick: (__VLS_ctx.submit)
     };
-    __VLS_86.slots.default;
+    __VLS_92.slots.default;
     (__VLS_ctx.t('common.apply'));
-    var __VLS_86;
+    var __VLS_92;
     var __VLS_19;
 }
 /** @type {[typeof BlockingOverlay, ]} */ ;
 // @ts-ignore
-const __VLS_91 = __VLS_asFunctionalComponent(BlockingOverlay, new BlockingOverlay({
+const __VLS_97 = __VLS_asFunctionalComponent(BlockingOverlay, new BlockingOverlay({
     ...{ 'onComplete': {} },
     dataTestid: (__VLS_ctx.qa('wlan-basic-multi-blocking-overlay')),
     isVisible: (__VLS_ctx.showBlockingOverlay),
     message: (__VLS_ctx.t('wireless.applyingBasicSettings')),
     duration: (30),
 }));
-const __VLS_92 = __VLS_91({
+const __VLS_98 = __VLS_97({
     ...{ 'onComplete': {} },
     dataTestid: (__VLS_ctx.qa('wlan-basic-multi-blocking-overlay')),
     isVisible: (__VLS_ctx.showBlockingOverlay),
     message: (__VLS_ctx.t('wireless.applyingBasicSettings')),
     duration: (30),
-}, ...__VLS_functionalComponentArgsRest(__VLS_91));
-let __VLS_94;
-let __VLS_95;
-let __VLS_96;
-const __VLS_97 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_97));
+let __VLS_100;
+let __VLS_101;
+let __VLS_102;
+const __VLS_103 = {
     onComplete: (__VLS_ctx.handleBlockingComplete)
 };
-var __VLS_93;
+var __VLS_99;
 /** @type {__VLS_StyleScopedClasses['wlan-basic-multi']} */ ;
 /** @type {__VLS_StyleScopedClasses['loading-overlay']} */ ;
 /** @type {__VLS_StyleScopedClasses['loading-spinner']} */ ;
@@ -838,6 +936,13 @@ var __VLS_93;
 /** @type {__VLS_StyleScopedClasses['section-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['band-toggle-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['band-toggle']} */ ;
+/** @type {__VLS_StyleScopedClasses['common-ssid-fields']} */ ;
+/** @type {__VLS_StyleScopedClasses['field']} */ ;
+/** @type {__VLS_StyleScopedClasses['field']} */ ;
+/** @type {__VLS_StyleScopedClasses['field']} */ ;
+/** @type {__VLS_StyleScopedClasses['pass-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['icon-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['material-icons']} */ ;
 /** @type {__VLS_StyleScopedClasses['edit-section']} */ ;
 /** @type {__VLS_StyleScopedClasses['section-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['interfaces-grid']} */ ;
@@ -851,7 +956,6 @@ var __VLS_93;
 /** @type {__VLS_StyleScopedClasses['pass-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-btn']} */ ;
 /** @type {__VLS_StyleScopedClasses['material-icons']} */ ;
-/** @type {__VLS_StyleScopedClasses['field']} */ ;
 /** @type {__VLS_StyleScopedClasses['footer-actions']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
