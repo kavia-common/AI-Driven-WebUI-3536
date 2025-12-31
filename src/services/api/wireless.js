@@ -24,6 +24,34 @@ export async function updateWlanBasic(data) {
     });
     return handleApiResponse(response);
 }
+/**
+ * PUBLIC_INTERFACE
+ * Fetch Basic WLAN configuration in the new multi-SSID WlanGroup schema.
+ */
+export async function getWlanBasicMulti() {
+    if (isDevelopment) {
+        // Reuse legacy mock if multi mock isn't present; UI will normalize.
+        return wlanBasicMockData;
+    }
+    return callApi(`${API_URL}?list=WlanBasic`);
+}
+/**
+ * PUBLIC_INTERFACE
+ * Update Basic WLAN configuration in the new multi-SSID WlanGroup schema.
+ */
+export async function updateWlanBasicMulti(data) {
+    if (isDevelopment) {
+        return data;
+    }
+    const response = await fetch(`${API_URL}?list=WlanBasic`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+    return handleApiResponse(response);
+}
 export async function getWlanAdvanced() {
     if (isDevelopment) {
         return wlanAdvancedMockData;

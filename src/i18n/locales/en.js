@@ -348,7 +348,19 @@ const translations = {
         mloMeshDisabled: 'MLO is enabled on one or more APs (Basic or Guest) – Mesh Settings cannot be changed.',
         meshMloDisabled: 'Mesh is enabled – MLO settings cannot be changed.',
         commonSsidDisabled: 'Common SSID is disabled – MLO settings cannot be changed.',
-        mloMeshWarning: 'MLO is currently enabled on one or more APs (Basic or Guest). It will be disabled automatically when applying Mesh settings.'
+        mloMeshWarning: 'MLO is currently enabled on one or more APs (Basic or Guest). It will be disabled automatically when applying Mesh settings.',
+        // Multi-SSID Basic Config (WlanGroup schema)
+        ssidGroupName: 'SSID Group Name',
+        noSsidGroups: 'No SSID groups available',
+        groupDefaultName: 'Home',
+        perBandInterfaces: 'Per-band Interfaces',
+        mfpConfig: 'MFP Config',
+        applyingBasicSettings: 'Applying WiFi Basic Settings...',
+        bandsEnabled: 'bands enabled',
+        commonSsidShort: 'Common SSID',
+        mloShort: 'MLO',
+        show: 'Show',
+        hide: 'Hide'
     },
     guest: {
         title: 'Guest Access',

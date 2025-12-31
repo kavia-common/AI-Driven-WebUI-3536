@@ -1,296 +1,465 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { getWlanBasic, updateWlanBasic } from '../../../services/api/wireless';
-import type { WlanBasicResponse } from '../../../types/wireless';
-import WirelessBandConfig from './basic/WirelessBandConfig.vue';
 import BlockingOverlay from '../../../components/BlockingOverlay.vue';
+import BaseButton from '../../../components/common/BaseButton.vue';
+import BaseCard from '../../../components/common/BaseCard.vue';
+import BaseCheckbox from '../../../components/common/BaseCheckbox.vue';
+import BaseInput from '../../../components/common/BaseInput.vue';
+import BaseSelect from '../../../components/common/BaseSelect.vue';
 import { useQA } from '../../../utils/qa';
-const { isQAMode, qa, slug } = useQA();
+import { getWlanBasicMulti, updateWlanBasicMulti } from '../../../services/api/wireless';
+import type {
+  WlanBasicMultiGetResponse,
+  WlanBasicMultiPostRequest,
+  WlanGroup,
+  WlanGroupBandSetting,
+  WlanGroupInterface
+} from '../../../types/wlanBasicMulti';
 
 const { t } = useI18n();
 const router = useRouter();
-const wlanBasicData = ref<WlanBasicResponse | null>(null);
+const { qa, slug } = useQA();
+
 const loading = ref(false);
 const showSuccess = ref(false);
-const showPassword = ref(false);
 const showBlockingOverlay = ref(false);
 
-// Computed property to check if MLO is disabled by Mesh
-const isMloDisabledByMesh = computed(() => {
-  return wlanBasicData.value?.WlanBasic.MeshEnable === 1;
-});
+const data = ref<WlanBasicMultiGetResponse | null>(null);
 
-// Computed property to check if MLO is disabled by Common SSID
-const isMloDisabledByCommonSsid = computed(() => {
-  return wlanBasicData.value?.WlanBasic.CommonSSIDEnable === 0;
-});
+const editIndex = ref<number | null>(null);
+const draft = ref<WlanGroup | null>(null);
+const showPassphrase = reactive<Record<string, boolean>>({});
 
-const fetchBasicConfig = async () => {
+const bands = ['2.4GHz', '5GHz', '6GHz'] as const;
+
+const normalizeGroup = (group: WlanGroup): WlanGroup => {
+  const copy: WlanGroup = JSON.parse(JSON.stringify(group));
+
+  // Ensure CommonSSIDBandSetting exists with 2.4/5/6 entries
+  if (!copy.CommonSSIDBandSetting || copy.CommonSSIDBandSetting.length === 0) {
+    copy.CommonSSIDBandSetting = bands.map((b) => ({ Band: b, Enable: 1 }));
+  } else {
+    // ensure all bands exist
+    for (const b of bands) {
+      if (!copy.CommonSSIDBandSetting.some((x) => x.Band === b)) {
+        copy.CommonSSIDBandSetting.push({ Band: b, Enable: 1 });
+      }
+    }
+  }
+
+  // Ensure Interface array has per-band entries
+  if (!copy.Interface) copy.Interface = [];
+  for (const b of bands) {
+    if (!copy.Interface.some((i) => i.Band === b)) {
+      copy.Interface.push({
+        Band: b,
+        Enable: 1,
+        SSID: copy.SSIDGroupName || '',
+        SecurityMode: '',
+        SecurityModeAvailable: '',
+        KeyPassPhrase: '',
+        MFPConfig: ''
+      });
+    }
+  }
+
+  return copy;
+};
+
+const fetchConfig = async () => {
   loading.value = true;
   try {
-    wlanBasicData.value = await getWlanBasic();
-  } catch (error) {
-    console.error('Error fetching wireless basic config:', error);
+    const resp = await getWlanBasicMulti();
+    // Defensive: if backend still returns legacy schema, try to map into WlanGroup list
+    if ((resp as any)?.WlanBasic?.WlanGroup) {
+      data.value = resp;
+    } else {
+      // legacy -> wrap single "Home" group from previous schema
+      const legacy = resp as any;
+      const modes2g = legacy?.WlanBasic?.wifi2g?.SecurityModeAvailable ?? '';
+      const modes5g = legacy?.WlanBasic?.wifi5g?.SecurityModeAvailable ?? '';
+      const modes6g = legacy?.WlanBasic?.wifi6g?.SecurityModeAvailable ?? '';
+      data.value = {
+        WlanBasic: {
+          WlanGroup: [
+            {
+              SSIDGroupName: t('wireless.groupDefaultName'),
+              CommonSSIDEnable: legacy?.WlanBasic?.CommonSSIDEnable ?? 0,
+              MLOEnable: legacy?.WlanBasic?.MLOEnable ?? 0,
+              CommonSSIDBandSetting: bands.map((b) => ({ Band: b, Enable: 1 })),
+              Interface: [
+                {
+                  Band: '2.4GHz',
+                  Enable: legacy?.WlanBasic?.wifi2g?.Enable ?? 1,
+                  SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
+                  SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
+                  SecurityModeAvailable: modes2g,
+                  KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
+                  MFPConfig: ''
+                },
+                {
+                  Band: '5GHz',
+                  Enable: legacy?.WlanBasic?.wifi5g?.Enable ?? 1,
+                  SSID: legacy?.WlanBasic?.wifi5g?.SSID ?? '',
+                  SecurityMode: legacy?.WlanBasic?.wifi5g?.SecurityMode ?? '',
+                  SecurityModeAvailable: modes5g,
+                  KeyPassPhrase: legacy?.WlanBasic?.wifi5g?.Password ?? '',
+                  MFPConfig: ''
+                },
+                {
+                  Band: '6GHz',
+                  Enable: legacy?.WlanBasic?.wifi6g?.Enable ?? 1,
+                  SSID: legacy?.WlanBasic?.wifi6g?.SSID ?? '',
+                  SecurityMode: legacy?.WlanBasic?.wifi6g?.SecurityMode ?? '',
+                  SecurityModeAvailable: modes6g,
+                  KeyPassPhrase: legacy?.WlanBasic?.wifi6g?.Password ?? '',
+                  MFPConfig: ''
+                }
+              ]
+            }
+          ]
+        }
+      };
+    }
+  } catch (e) {
+    console.error('Error fetching WLAN Basic (multi) config:', e);
   } finally {
     loading.value = false;
   }
 };
 
-const showSuccessMessage = () => {
-  showSuccess.value = true;
-  setTimeout(() => {
-    showSuccess.value = false;
-  }, 3000);
+const groups = computed(() => data.value?.WlanBasic?.WlanGroup ?? []);
+
+const summarizeGroup = (g: WlanGroup) => {
+  const enabledBandCount = (g.CommonSSIDBandSetting ?? []).filter((b) => b.Enable === 1).length;
+  const bandInfo = `${enabledBandCount}/${bands.length} ${t('wireless.bandsEnabled')}`;
+  const common = g.CommonSSIDEnable === 1 ? t('common.enabled') : t('common.no');
+  const mlo = g.MLOEnable === 1 ? t('common.enabled') : t('common.no');
+  return `${t('wireless.commonSsidShort')}: ${common} • ${t('wireless.mloShort')}: ${mlo} • ${bandInfo}`;
 };
 
-const handleCommonSsidToggle = () => {
-  if (!wlanBasicData.value) return;
+const startEdit = (index: number) => {
+  editIndex.value = index;
+  draft.value = normalizeGroup(JSON.parse(JSON.stringify(groups.value[index])));
+  // Reset passphrase visibility state in edit mode
+  for (const b of bands) {
+    showPassphrase[`${b}`] = false;
+  }
+};
 
-  // When Common SSID is disabled, also disable MLO
-  if (wlanBasicData.value.WlanBasic.CommonSSIDEnable === 0) {
-    wlanBasicData.value.WlanBasic.MLOEnable = 0;
+const cancelEdit = () => {
+  editIndex.value = null;
+  draft.value = null;
+};
+
+const securityModeOptionsForInterface = (itf: WlanGroupInterface): string[] => {
+  const csv = (itf.SecurityModeAvailable ?? '').trim();
+  if (!csv) return [];
+  return csv.split(',').map((s) => s.trim()).filter(Boolean);
+};
+
+const getInterfaceByBand = (band: string): WlanGroupInterface | undefined => {
+  return draft.value?.Interface?.find((x) => x.Band === band);
+};
+
+const getBandSettingByBand = (band: string): WlanGroupBandSetting | undefined => {
+  return draft.value?.CommonSSIDBandSetting?.find((x) => x.Band === band);
+};
+
+const onCommonSsidToggle = () => {
+  if (!draft.value) return;
+  if (draft.value.CommonSSIDEnable === 0) {
+    // When disabling Common SSID, also disable MLO
+    draft.value.MLOEnable = 0;
+  }
+};
+
+const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
+  if (!data.value) return null;
+
+  // If editing, use edited group; else, post current data
+  const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g, idx) => {
+    const src = editIndex.value === idx && draft.value ? draft.value : g;
+    const norm = normalizeGroup(src);
+
+    return {
+      SSIDGroupName: norm.SSIDGroupName,
+      CommonSSIDEnable: norm.CommonSSIDEnable,
+      MLOEnable: norm.MLOEnable,
+      CommonSSIDBandSetting: norm.CommonSSIDBandSetting?.map((b) => ({
+        Band: b.Band,
+        Enable: b.Enable
+      })),
+      Interface: norm.Interface.map((i) => ({
+        Band: i.Band,
+        Enable: i.Enable,
+        SSID: i.SSID,
+        SecurityMode: i.SecurityMode,
+        // Prefer KeyPassPhrase, but allow fallback from WpaPreShareKey
+        KeyPassPhrase: (i.KeyPassPhrase ?? i.WpaPreShareKey ?? '').toString(),
+        MFPConfig: i.MFPConfig
+      }))
+    };
+  });
+
+  return { WlanBasic: { WlanGroup: postGroups } };
+};
+
+const showSuccessMessage = () => {
+  showSuccess.value = true;
+  setTimeout(() => (showSuccess.value = false), 2500);
+};
+
+const submit = async () => {
+  const payload = buildPostPayload();
+  if (!payload) return;
+
+  loading.value = true;
+  try {
+    await updateWlanBasicMulti(payload);
+    showSuccessMessage();
+    showBlockingOverlay.value = true;
+  } catch (e) {
+    console.error('Error updating WLAN Basic (multi) config:', e);
+  } finally {
+    loading.value = false;
+    cancelEdit();
   }
 };
 
 const handleBlockingComplete = () => {
   showBlockingOverlay.value = false;
-  // Redirect back to the current page to refresh data
   router.go(0);
 };
 
-const handleSubmit = async () => {
-  if (!wlanBasicData.value) return;
-  
-  loading.value = true;
-  try {
-    // Create a new object without MeshEnable and SecurityModeAvailable for the POST request
-    const postData = {
-      WlanBasic: {
-        MLOEnable: wlanBasicData.value.WlanBasic.MLOEnable,
-        CommonSSIDEnable: wlanBasicData.value.WlanBasic.CommonSSIDEnable,
-        wifi2g: {
-          Enable: wlanBasicData.value.WlanBasic.wifi2g.Enable,
-          SSID: wlanBasicData.value.WlanBasic.wifi2g.SSID,
-          SecurityMode: wlanBasicData.value.WlanBasic.wifi2g.SecurityMode,
-          Password: wlanBasicData.value.WlanBasic.wifi2g.Password
-        },
-        wifi5g: {
-          Enable: wlanBasicData.value.WlanBasic.wifi5g.Enable,
-          SSID: wlanBasicData.value.WlanBasic.wifi5g.SSID,
-          SecurityMode: wlanBasicData.value.WlanBasic.wifi5g.SecurityMode,
-          Password: wlanBasicData.value.WlanBasic.wifi5g.Password
-        },
-        wifi6g: {
-          Enable: wlanBasicData.value.WlanBasic.wifi6g.Enable,
-          SSID: wlanBasicData.value.WlanBasic.wifi6g.SSID,
-          SecurityMode: wlanBasicData.value.WlanBasic.wifi6g.SecurityMode,
-          Password: wlanBasicData.value.WlanBasic.wifi6g.Password
-        },
-        wifimlo: {
-          Enable: wlanBasicData.value.WlanBasic.wifimlo.Enable,
-          SSID: wlanBasicData.value.WlanBasic.wifimlo.SSID,
-          SecurityMode: wlanBasicData.value.WlanBasic.wifimlo.SecurityMode,
-          Password: wlanBasicData.value.WlanBasic.wifimlo.Password
-        }
-      }
-    };
-    
-    await updateWlanBasic(postData);
-    showSuccessMessage();
-    
-    // Show blocking overlay instead of immediate refresh
-    showBlockingOverlay.value = true;
-  } catch (error) {
-    console.error('Error updating wireless basic config:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(fetchBasicConfig);
+onMounted(fetchConfig);
 </script>
 
 <template>
-  <div class="wireless-basic-config" :data-testid="qa('wireless-basic-config-content')">
-    <form @submit.prevent="handleSubmit" :class="{ 'loading': loading }" :data-testid="qa('wireless-basic-config-form')">
-      <div v-if="loading" class="loading-overlay" :data-testid="qa('wireless-basic-config-loading-overlay')">
-        <div class="loading-spinner"></div>
+  <div class="wlan-basic-multi" :data-testid="qa('wlan-basic-multi-root')">
+    <div v-if="loading" class="loading-overlay" :data-testid="qa('wlan-basic-multi-loading')">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <div v-if="showSuccess" class="success-message" :data-testid="qa('wlan-basic-multi-success')">
+      {{ t('common.apply') }} {{ t('common.saveSuccess') }}
+    </div>
+
+    <!-- Compact list view -->
+    <BaseCard class="compact-card" :data-testid="qa('wlan-basic-multi-list-card')">
+      <template #header>
+        <div class="card-header-row">
+          <div class="card-title">{{ t('wireless.basicConfig') }}</div>
+          <BaseButton
+            variant="secondary"
+            size="sm"
+            :disabled="loading"
+            :data-testid="qa('wlan-basic-multi-refresh')"
+            @click="fetchConfig"
+          >
+            {{ t('common.refresh') }}
+          </BaseButton>
+        </div>
+      </template>
+
+      <div class="group-table" :data-testid="qa('wlan-basic-multi-group-table')">
+        <div class="group-table-head">
+          <div class="col col-name">{{ t('wireless.ssidGroupName') }}</div>
+          <div class="col col-common">{{ t('wireless.commonSsidEnable') }}</div>
+          <div class="col col-mlo">{{ t('wireless.mloEnable') }}</div>
+          <div class="col col-actions">{{ t('common.action') }}</div>
+        </div>
+
+        <div v-for="(g, idx) in groups" :key="`${g.SSIDGroupName}-${idx}`" class="group-table-row">
+          <div class="col col-name">
+            <div class="name-line">{{ g.SSIDGroupName }}</div>
+            <div class="sub-line">{{ summarizeGroup(g) }}</div>
+          </div>
+
+          <div class="col col-common">
+            <span class="pill" :class="g.CommonSSIDEnable === 1 ? 'on' : 'off'">
+              {{ g.CommonSSIDEnable === 1 ? t('common.enabled') : t('common.no') }}
+            </span>
+          </div>
+
+          <div class="col col-mlo">
+            <span class="pill" :class="g.MLOEnable === 1 ? 'on' : 'off'">
+              {{ g.MLOEnable === 1 ? t('common.enabled') : t('common.no') }}
+            </span>
+          </div>
+
+          <div class="col col-actions">
+            <BaseButton
+              variant="primary"
+              size="sm"
+              :data-testid="qa(`wlan-basic-multi-edit-${idx}`)"
+              @click="startEdit(idx)"
+            >
+              {{ t('common.edit') }}
+            </BaseButton>
+          </div>
+        </div>
+
+        <div v-if="groups.length === 0" class="empty-row">
+          {{ t('wireless.noSsidGroups') }}
+        </div>
       </div>
+    </BaseCard>
 
-      <div v-if="showSuccess" class="success-message" :data-testid="qa('wireless-basic-config-success-message')">
-        {{ t('common.apply') }} successful
-      </div>
+    <!-- Edit mode -->
+    <BaseCard v-if="draft && editIndex !== null" class="compact-card edit-card" :data-testid="qa('wlan-basic-multi-edit-card')">
+      <template #header>
+        <div class="card-header-row">
+          <div class="card-title">
+            {{ t('common.edit') }}: {{ draft.SSIDGroupName }}
+          </div>
 
-      <div v-if="wlanBasicData" class="band-sections" :data-testid="qa('wireless-basic-config-band-sections')">
-        <!-- Show info banner when MLO is disabled by Mesh -->
-        <div class="mesh-status" v-if="isMloDisabledByMesh" :data-testid="qa('wireless-basic-config-mesh-status')">
-          <div class="info-banner" :data-testid="qa('wireless-basic-config-mesh-info-banner')">
-            <span class="material-icons">info</span>
-            <span>{{ t('wireless.meshMloDisabled') }}</span>
+          <div class="header-actions">
+            <BaseButton variant="secondary" size="sm" :data-testid="qa('wlan-basic-multi-edit-cancel-top')" @click="cancelEdit">
+              {{ t('common.cancel') }}
+            </BaseButton>
+            <BaseButton variant="primary" size="sm" :data-testid="qa('wlan-basic-multi-edit-apply-top')" @click="submit">
+              {{ t('common.apply') }}
+            </BaseButton>
           </div>
         </div>
+      </template>
 
-        <!-- Common SSID Settings Section -->
-        <div class="panel-section" :data-testid="qa('wireless-basic-config-common-ssid-section')">
-          <div class="section-title" :data-testid="qa('wireless-basic-config-common-ssid-title')">{{ t('wireless.commonSsidSettings') }}</div>
-          <div class="card-content" :data-testid="qa('wireless-basic-config-common-ssid-content')">
-            <!-- Common SSID Enable Toggle -->
-            <div class="form-group">
-              <div class="switch-label">
-                <span :data-testid="qa('wireless-basic-config-common-ssid-enable-label')">{{ t('wireless.commonSsidEnable') }}</span>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :data-testid="qa('wireless-basic-config-common-ssid-enable-toggle')"
-                    v-model="wlanBasicData.WlanBasic.CommonSSIDEnable"
-                    :true-value="1"
-                    :false-value="0"
-                    @change="handleCommonSsidToggle"
-                  >
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- MLO Settings Section -->
-        <div class="panel-section" :data-testid="qa('wireless-basic-config-mlo-section')">
-          <div class="section-title" :data-testid="qa('wireless-basic-config-mlo-title')">{{ t('wireless.mloSettings') }}</div>
-          <div class="card-content" :data-testid="qa('wireless-basic-config-mlo-content')">
-            <!-- MLO Enable Toggle -->
-            <div class="form-group">
-              <div class="switch-label">
-                <span :data-testid="qa('wireless-basic-config-mlo-enable-label')">{{ t('wireless.mloEnable') }}</span>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :data-testid="qa('wireless-basic-config-mlo-enable-toggle')"
-                    v-model="wlanBasicData.WlanBasic.MLOEnable"
-                    :true-value="1"
-                    :false-value="0"
-                    :disabled="isMloDisabledByMesh || wlanBasicData.WlanBasic.CommonSSIDEnable === 0"
-                  >
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Common SSID Band Settings Section (shown when Common SSID is enabled) -->
-        <div v-if="wlanBasicData.WlanBasic.CommonSSIDEnable === 1" class="panel-section" :data-testid="qa('wireless-basic-config-common-ssid-band-section')">
-          <div class="band-header">
-            <div class="section-title-sp" :data-testid="qa('wireless-basic-config-common-ssid-band-title')">{{ t('wireless.commonSsidBandSettings') }}</div>
-          </div>
-          
-          <div class="band-content" :data-testid="qa('wireless-basic-config-common-ssid-band-content')">
-            <div class="form-group">
-              <div class="switch-label">
-                <span :data-testid="qa('wireless-basic-config-common-ssid-band-enable-label')">{{ t('common.enable') }}</span>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :data-testid="qa('wireless-basic-config-common-ssid-band-enable-toggle')"
-                    v-model="wlanBasicData.WlanBasic.wifimlo.Enable"
-                    :true-value="1"
-                    :false-value="0"
-                  >
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label :data-testid="qa('wireless-basic-config-common-ssid-band-ssid-label')">{{ t('wireless.ssid') }}</label>
-              <input
-                type="text"
-                :data-testid="qa('wireless-basic-config-common-ssid-band-ssid-input')"
-                v-model="wlanBasicData.WlanBasic.wifimlo.SSID"
-                :disabled="!wlanBasicData.WlanBasic.wifimlo.Enable"
+      <div class="edit-grid" :data-testid="qa('wlan-basic-multi-edit-grid')">
+        <!-- Common toggles -->
+        <div class="edit-section" :data-testid="qa('wlan-basic-multi-common-section')">
+          <div class="section-title">{{ t('wireless.commonSsidSettings') }}</div>
+          <div class="fields-grid">
+            <div class="field">
+              <BaseCheckbox
+                :model-value="draft.CommonSSIDEnable === 1"
+                :label="t('wireless.commonSsidEnable')"
+                :data-testid="qa('wlan-basic-multi-common-ssid-enable')"
+                @update:model-value="(v: boolean) => { draft!.CommonSSIDEnable = v ? 1 : 0; onCommonSsidToggle(); }"
               />
             </div>
-
-            <div class="form-group">
-              <label :data-testid="qa('wireless-basic-config-common-ssid-band-authentication-label')">{{ t('wireless.authentication') }}</label>
-              <select
-                :data-testid="qa('wireless-basic-config-common-ssid-band-authentication-select')"
-                v-model="wlanBasicData.WlanBasic.wifimlo.SecurityMode"
-                :disabled="!wlanBasicData.WlanBasic.wifimlo.Enable"
-              >
-                <option
-                  v-for="mode in (wlanBasicData.WlanBasic.wifimlo.SecurityModeAvailable ?? '').split(',')"
-                  :key="mode"
-                  :data-testid="qa(`wireless-basic-config-common-ssid-band-authentication-option-${slug(mode)}`)"
-                  :value="mode"
-                >
-                  {{ mode }}
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label :data-testid="qa('wireless-basic-config-common-ssid-band-password-label')">{{ t('wireless.password') }}</label>
-              <div class="password-input" :data-testid="qa('wireless-basic-config-common-ssid-band-password-container')">
-                <input
-                  :type="showPassword ? 'text' : 'password'"
-                  :data-testid="qa('wireless-basic-config-common-ssid-band-password-input')"
-                  v-model="wlanBasicData.WlanBasic.wifimlo.Password"
-                  :disabled="!wlanBasicData.WlanBasic.wifimlo.Enable"
-                />
-                <button
-                  type="button"
-                  class="toggle-password"
-                  :data-testid="qa('wireless-basic-config-common-ssid-band-password-toggle')"
-                  @click="showPassword = !showPassword"
-                  :disabled="!wlanBasicData.WlanBasic.wifimlo.Enable"
-                >
-                  <span class="material-icons">
-                    {{ showPassword ? 'visibility_off' : 'visibility' }}
-                  </span>
-                </button>
+            <div class="field">
+              <BaseCheckbox
+                :model-value="draft.MLOEnable === 1"
+                :label="t('wireless.mloEnable')"
+                :disabled="draft.CommonSSIDEnable === 0"
+                :data-testid="qa('wlan-basic-multi-mlo-enable')"
+                @update:model-value="(v: boolean) => { draft!.MLOEnable = v ? 1 : 0; }"
+              />
+              <div v-if="draft.CommonSSIDEnable === 0" class="hint">
+                {{ t('wireless.commonSsidDisabled') }}
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Individual Band Configurations (only shown when Common SSID is disabled) -->
-        <template v-if="wlanBasicData.WlanBasic.CommonSSIDEnable === 0">
-          <WirelessBandConfig
-            :data-testid="qa('wireless-basic-config-2g-band')"
-            title="2.4GHz"
-            v-model="wlanBasicData.WlanBasic.wifi2g"
-          />
-          <WirelessBandConfig
-            :data-testid="qa('wireless-basic-config-5g-band')"
-            title="5GHz"
-            v-model="wlanBasicData.WlanBasic.wifi5g"
-          />
-          <WirelessBandConfig
-            :data-testid="qa('wireless-basic-config-6g-band')"
-            title="6GHz"
-            v-model="wlanBasicData.WlanBasic.wifi6g"
-          />
-        </template>
+        <!-- Common SSID band settings -->
+        <div class="edit-section" :data-testid="qa('wlan-basic-multi-common-band-section')">
+          <div class="section-title">{{ t('wireless.commonSsidBandSettings') }}</div>
+
+          <div class="band-toggle-row">
+            <div v-for="b in bands" :key="b" class="band-toggle">
+              <BaseCheckbox
+                :model-value="getBandSettingByBand(b)!.Enable === 1"
+                :label="b"
+                :disabled="draft.CommonSSIDEnable === 0"
+                :data-testid="qa(`wlan-basic-multi-common-band-enable-${slug(b)}`)"
+                @update:model-value="(v: boolean) => { getBandSettingByBand(b)!.Enable = v ? 1 : 0; }"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Per-band interface cards -->
+        <div class="edit-section" :data-testid="qa('wlan-basic-multi-interfaces-section')">
+          <div class="section-title">{{ t('wireless.perBandInterfaces') }}</div>
+
+          <div class="interfaces-grid">
+            <BaseCard v-for="b in bands" :key="b" class="iface-card" :data-testid="qa(`wlan-basic-multi-iface-${slug(b)}`)">
+              <template #header>
+                <div class="iface-header">
+                  <div class="iface-title">{{ b }}</div>
+                  <BaseCheckbox
+                    :model-value="getInterfaceByBand(b)!.Enable === 1"
+                    :label="t('common.enable')"
+                    :data-testid="qa(`wlan-basic-multi-iface-enable-${slug(b)}`)"
+                    @update:model-value="(v: boolean) => { getInterfaceByBand(b)!.Enable = v ? 1 : 0; }"
+                  />
+                </div>
+              </template>
+
+              <div class="iface-fields">
+                <div class="field">
+                  <BaseInput
+                    v-model="getInterfaceByBand(b)!.SSID"
+                    :label="t('wireless.ssid')"
+                    :disabled="getInterfaceByBand(b)!.Enable === 0"
+                    :data-testid="qa(`wlan-basic-multi-iface-ssid-${slug(b)}`)"
+                  />
+                </div>
+
+                <div class="field">
+                  <BaseSelect
+                    v-model="getInterfaceByBand(b)!.SecurityMode"
+                    :label="t('wireless.authentication')"
+                    :options="securityModeOptionsForInterface(getInterfaceByBand(b)!).map((m) => ({ label: m, value: m }))"
+                    :disabled="getInterfaceByBand(b)!.Enable === 0"
+                    :data-testid="qa(`wlan-basic-multi-iface-security-${slug(b)}`)"
+                  />
+                </div>
+
+                <div class="field">
+                  <div class="pass-row">
+                    <BaseInput
+                      v-model="getInterfaceByBand(b)!.KeyPassPhrase"
+                      :label="t('wireless.password')"
+                      :type="showPassphrase[b] ? 'text' : 'password'"
+                      :disabled="getInterfaceByBand(b)!.Enable === 0"
+                      :data-testid="qa(`wlan-basic-multi-iface-psk-${slug(b)}`)"
+                    />
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      :disabled="getInterfaceByBand(b)!.Enable === 0"
+                      :data-testid="qa(`wlan-basic-multi-iface-psk-toggle-${slug(b)}`)"
+                      @click="showPassphrase[b] = !showPassphrase[b]"
+                      :title="showPassphrase[b] ? t('wireless.hide') : t('wireless.show')"
+                    >
+                      <span class="material-icons">{{ showPassphrase[b] ? 'visibility_off' : 'visibility' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <BaseInput
+                    v-model="getInterfaceByBand(b)!.MFPConfig"
+                    :label="t('wireless.mfpConfig')"
+                    :disabled="getInterfaceByBand(b)!.Enable === 0"
+                    :data-testid="qa(`wlan-basic-multi-iface-mfp-${slug(b)}`)"
+                  />
+                </div>
+              </div>
+            </BaseCard>
+          </div>
+        </div>
       </div>
 
-      <div class="button-group" :data-testid="qa('wireless-basic-config-button-group')">
-        <button type="button" class="btn btn-secondary" :data-testid="qa('wireless-basic-config-cancel-button')" @click="fetchBasicConfig" :disabled="loading">
+      <div class="footer-actions">
+        <BaseButton variant="secondary" :data-testid="qa('wlan-basic-multi-edit-cancel')" @click="cancelEdit">
           {{ t('common.cancel') }}
-        </button>
-        <button type="submit" class="btn btn-primary" :data-testid="qa('wireless-basic-config-apply-button')" :disabled="loading">
+        </BaseButton>
+        <BaseButton variant="primary" :data-testid="qa('wlan-basic-multi-edit-apply')" @click="submit">
           {{ t('common.apply') }}
-        </button>
+        </BaseButton>
       </div>
-    </form>
+    </BaseCard>
 
-    <!-- Blocking Overlay -->
     <BlockingOverlay
-      :data-testid="qa('wireless-basic-config-blocking-overlay')"
+      :data-testid="qa('wlan-basic-multi-blocking-overlay')"
       :is-visible="showBlockingOverlay"
-      message="Applying WiFi Basic Settings..."
+      :message="t('wireless.applyingBasicSettings')"
       :duration="30"
       @complete="handleBlockingComplete"
     />
@@ -298,31 +467,32 @@ onMounted(fetchBasicConfig);
 </template>
 
 <style scoped>
-.wireless-basic-config {
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.wlan-basic-multi {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compact-card {
+  padding: 0;
 }
 
 .loading-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.75);
+  display: grid;
+  place-items: center;
   z-index: 10;
+  border-radius: 6px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #0070BB;
+  border-top: 4px solid #0070bb;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -333,222 +503,214 @@ onMounted(fetchBasicConfig);
   right: 20px;
   background-color: #4caf50;
   color: white;
-  padding: 1rem 2rem;
-  border-radius: 4px;
-  animation: fadeInOut 3s ease-in-out;
+  padding: 10px 14px;
+  border-radius: 6px;
   z-index: 100;
 }
 
-.mesh-status {
-  margin-top: 1.5rem;
-}
-
-.info-banner {
+.card-header-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background-color: #e3f2fd;
-  border-left: 4px solid #0070BB;
-  border-radius: 4px;
-  color: #0070BB;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.info-banner .material-icons {
-  font-size: 1.25rem;
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(-20px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-20px); }
-}
-
-.band-sections {
+.group-table {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem;
 }
 
-.panel-section {
-  background-color: white;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
-}
-
-.band-header {
-  display: flex;
-  justify-content: space-between;
+.group-table-head,
+.group-table-row {
+  display: grid;
+  grid-template-columns: 1.6fr 0.6fr 0.6fr 0.5fr;
+  gap: 8px;
+  padding: 10px 12px;
   align-items: center;
-  padding: 0.4rem 1.5rem;
-  background-color: white;
+}
+
+.group-table-head {
+  background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.section-title-sp {
-  font-size: 1rem;
-  color: var(--text-primary);
-  padding: 0.5rem 0rem;
-  background-color: white;
+.group-table-row {
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
 }
 
-.band-content {
-  padding: 1.5rem;
+.group-table-row:last-child {
+  border-bottom: none;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.col-name .name-line {
+  font-weight: 600;
 }
 
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
-}
-
-.form-group > input[type="text"],
-.form-group > input[type="password"],
-.form-group > select,
-.password-input > input[type="text"],
-.password-input > input[type="password"] {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.form-group > input:disabled,
-.form-group > select:disabled {
-  background-color: var(--bg-secondary);
-  cursor: not-allowed;
-}
-
-input:disabled + .slider {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.password-input {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.password-input input {
-  padding-right: 2.5rem;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 0.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
+.col-name .sub-line {
+  font-size: 12px;
   color: var(--text-secondary);
-  padding: 0.25rem;
+  margin-top: 2px;
+  line-height: 1.2;
 }
 
-.toggle-password:hover:not(:disabled) {
-  color: var(--text-primary);
+.pill {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+  justify-content: center;
 }
 
-.toggle-password:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.pill.on {
+  background: rgba(76, 175, 80, 0.12);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #2e7d32;
 }
 
-/* Custom switch size (60px × 34px) for larger prominence */
-.switch {
-  width: 60px;
-  height: 34px;
-  flex-shrink: 0;
+.pill.off {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-secondary);
 }
 
-.slider:before {
-  height: 26px;
-  width: 26px;
+.empty-row {
+  padding: 14px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
-input:checked + .slider:before {
-  transform: translateX(26px);
+.edit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.edit-section {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
 }
 
 .section-title {
-  padding: 1rem 1.5rem;
-  font-size: 1rem;
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 
-.card-content {
-  padding: 1.5rem;
+.fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
-.button-group {
+.hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.band-toggle-row {
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.btn {
-  padding: 0.5rem 1.5rem;
-  border-radius: 4px;
-  border: none;
+.interfaces-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.iface-card {
+  padding: 0;
+}
+
+.iface-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.iface-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.iface-fields {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pass-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.icon-btn {
+  height: 36px;
+  width: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: white;
+  display: grid;
+  place-items: center;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: opacity 0.2s;
 }
 
-.btn:disabled {
+.icon-btn:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.btn-primary {
-  background-color: #0070BB;
-  color: white;
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 12px 12px;
 }
 
-.btn-secondary {
-  background-color: #f0f0f0;
-  color: #666;
+@media (max-width: 960px) {
+  .group-table-head,
+  .group-table-row {
+    grid-template-columns: 1fr 0.6fr 0.6fr 0.6fr;
+  }
+
+  .interfaces-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fields-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.btn:not(:disabled):hover {
-  opacity: 0.9;
-}
-
-@media (max-width: 768px) {
-  .band-sections {
-    padding: 1rem;
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  
-  .card-content {
-    padding: 1rem;
-  }
-
-  .button-group {
-    flex-direction: column;
-    padding: 1rem;
-  }
-
-  .button-group .btn {
-    width: 100%;
+  100% {
+    transform: rotate(360deg);
   }
 }
 </style>
