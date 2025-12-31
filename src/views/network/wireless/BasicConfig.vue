@@ -13,12 +13,12 @@ import { getWlanBasicMulti, updateWlanBasicMulti } from '../../../services/api/w
 import type {
   WlanBasicMultiGetResponse,
   WlanBasicMultiPostRequest,
-  WlanGroup,
-  WlanGroupBandSetting,
-  WlanGroupInterface
+  WlanGroupItem,
+  WlanInterface,
+  CommonSSIDBand
 } from '../../../types/wlanBasicMulti';
 
-type CommonSSIDBandSettingItem = NonNullable<WlanGroup['CommonSSIDBandSetting']>[number];
+type CommonSSIDBandSettingItem = NonNullable<WlanGroupItem['CommonSSIDBandSetting']>[number];
 
 const { t } = useI18n();
 const router = useRouter();
@@ -37,13 +37,13 @@ const data = ref<WlanBasicMultiGetResponse | null>(null);
 const lastGetSnapshot = ref<WlanBasicMultiGetResponse | null>(null);
 
 const editIndex = ref<number | null>(null);
-const draft = ref<WlanGroup | null>(null);
+const draft = ref<WlanGroupItem | null>(null);
 const showPassphrase = reactive<Record<string, boolean>>({});
 
 const bands = ['2.4GHz', '5GHz', '6GHz'] as const;
 
-const normalizeGroup = (group: WlanGroup): WlanGroup => {
-  const copy: WlanGroup = JSON.parse(JSON.stringify(group));
+const normalizeGroup = (group: WlanGroupItem): WlanGroupItem => {
+  const copy: WlanGroupItem = JSON.parse(JSON.stringify(group));
 
   // Ensure CommonSSIDBandSetting exists with 2.4/5/6 entries
   if (!copy.CommonSSIDBandSetting || copy.CommonSSIDBandSetting.length === 0) {
@@ -60,15 +60,16 @@ const normalizeGroup = (group: WlanGroup): WlanGroup => {
   // Ensure Interface array has per-band entries
   if (!copy.Interface) copy.Interface = [];
   for (const b of bands) {
-    if (!copy.Interface.some((i: WlanGroupInterface) => i.Band === b)) {
+    if (!copy.Interface.some((i: WlanInterface) => i.Band === b)) {
       copy.Interface.push({
         Band: b,
         Enable: 1,
-        SSID: copy.SSIDGroupName || '',
-        SecurityMode: '',
-        SecurityModeAvailable: '',
-        KeyPassPhrase: '',
-        MFPConfig: ''
+        Alias: '',
+        SSID: copy.SSID || '',
+        SecurityMode: copy.SecurityMode || '',
+        SecurityModeAvailable: copy.SecurityModeAvailable,
+        KeyPassPhrase: copy.KeyPassPhrase || '',
+        MFPConfig: copy.MFPConfig
       });
     }
   }
@@ -80,55 +81,63 @@ const fetchConfig = async () => {
   loading.value = true;
   try {
     const resp = await getWlanBasicMulti();
-    // Defensive: if backend still returns legacy schema, try to map into WlanGroup list
-    if ((resp as any)?.WlanBasic?.WlanGroup) {
-      data.value = resp;
+
+    // If backend already returns the new schema, accept it directly.
+    if ((resp as any)?.WlanGroup) {
+      data.value = resp as WlanBasicMultiGetResponse;
     } else {
       // legacy -> wrap single "Home" group from previous schema
       const legacy = resp as any;
       const modes2g = legacy?.WlanBasic?.wifi2g?.SecurityModeAvailable ?? '';
       const modes5g = legacy?.WlanBasic?.wifi5g?.SecurityModeAvailable ?? '';
       const modes6g = legacy?.WlanBasic?.wifi6g?.SecurityModeAvailable ?? '';
+
       data.value = {
-        WlanBasic: {
-          WlanGroup: [
-            {
-              SSIDGroupName: t('wireless.groupDefaultName'),
-              CommonSSIDEnable: legacy?.WlanBasic?.CommonSSIDEnable ?? 0,
-              MLOEnable: legacy?.WlanBasic?.MLOEnable ?? 0,
-              CommonSSIDBandSetting: bands.map((b) => ({ Band: b, Enable: 1 })),
-              Interface: [
-                {
-                  Band: '2.4GHz',
-                  Enable: legacy?.WlanBasic?.wifi2g?.Enable ?? 1,
-                  SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
-                  SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
-                  SecurityModeAvailable: modes2g,
-                  KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
-                  MFPConfig: ''
-                },
-                {
-                  Band: '5GHz',
-                  Enable: legacy?.WlanBasic?.wifi5g?.Enable ?? 1,
-                  SSID: legacy?.WlanBasic?.wifi5g?.SSID ?? '',
-                  SecurityMode: legacy?.WlanBasic?.wifi5g?.SecurityMode ?? '',
-                  SecurityModeAvailable: modes5g,
-                  KeyPassPhrase: legacy?.WlanBasic?.wifi5g?.Password ?? '',
-                  MFPConfig: ''
-                },
-                {
-                  Band: '6GHz',
-                  Enable: legacy?.WlanBasic?.wifi6g?.Enable ?? 1,
-                  SSID: legacy?.WlanBasic?.wifi6g?.SSID ?? '',
-                  SecurityMode: legacy?.WlanBasic?.wifi6g?.SecurityMode ?? '',
-                  SecurityModeAvailable: modes6g,
-                  KeyPassPhrase: legacy?.WlanBasic?.wifi6g?.Password ?? '',
-                  MFPConfig: ''
-                }
-              ]
-            }
-          ]
-        }
+        WlanGroup: [
+          {
+            Enable: 1,
+            Alias: t('wireless.groupDefaultName'),
+            SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
+            KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
+            SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
+            SecurityModeAvailable: modes2g,
+            CommonSSIDEnable: legacy?.WlanBasic?.CommonSSIDEnable ?? 0,
+            MLOEnable: legacy?.WlanBasic?.MLOEnable ?? 0,
+            CommonSSIDBandSetting: bands.map((b) => ({ Band: b, Enable: 1 })),
+            Interface: [
+              {
+                Band: '2.4GHz',
+                Enable: legacy?.WlanBasic?.wifi2g?.Enable ?? 1,
+                Alias: '',
+                SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
+                SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
+                SecurityModeAvailable: modes2g,
+                KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
+                MFPConfig: ''
+              },
+              {
+                Band: '5GHz',
+                Enable: legacy?.WlanBasic?.wifi5g?.Enable ?? 1,
+                Alias: '',
+                SSID: legacy?.WlanBasic?.wifi5g?.SSID ?? '',
+                SecurityMode: legacy?.WlanBasic?.wifi5g?.SecurityMode ?? '',
+                SecurityModeAvailable: modes5g,
+                KeyPassPhrase: legacy?.WlanBasic?.wifi5g?.Password ?? '',
+                MFPConfig: ''
+              },
+              {
+                Band: '6GHz',
+                Enable: legacy?.WlanBasic?.wifi6g?.Enable ?? 1,
+                Alias: '',
+                SSID: legacy?.WlanBasic?.wifi6g?.SSID ?? '',
+                SecurityMode: legacy?.WlanBasic?.wifi6g?.SecurityMode ?? '',
+                SecurityModeAvailable: modes6g,
+                KeyPassPhrase: legacy?.WlanBasic?.wifi6g?.Password ?? '',
+                MFPConfig: ''
+              }
+            ]
+          }
+        ]
       };
     }
 
@@ -141,9 +150,9 @@ const fetchConfig = async () => {
   }
 };
 
-const groups = computed(() => data.value?.WlanBasic?.WlanGroup ?? []);
+const groups = computed(() => data.value?.WlanGroup ?? []);
 
-const summarizeGroup = (g: WlanGroup) => {
+const summarizeGroup = (g: WlanGroupItem) => {
   const enabledBandCount = (g.CommonSSIDBandSetting ?? []).filter((b: CommonSSIDBandSettingItem) => b.Enable === 1).length;
   const bandInfo = `${enabledBandCount}/${bands.length} ${t('wireless.bandsEnabled')}`;
   const common = g.CommonSSIDEnable === 1 ? t('common.enabled') : t('common.no');
@@ -194,7 +203,7 @@ const updateLocal = () => {
     }
   }
 
-  data.value.WlanBasic.WlanGroup[idx] = normalized;
+  data.value.WlanGroup[idx] = normalized;
   cancelEdit();
 };
 
@@ -208,7 +217,7 @@ const restoreFromGet = () => {
   data.value = JSON.parse(JSON.stringify(lastGetSnapshot.value));
 };
 
-const securityModeOptionsForInterface = (itf: WlanGroupInterface): string[] => {
+const securityModeOptionsForInterface = (itf: WlanInterface): string[] => {
   const csv = (itf.SecurityModeAvailable ?? '').trim();
   if (!csv) return [];
   return csv
@@ -217,12 +226,12 @@ const securityModeOptionsForInterface = (itf: WlanGroupInterface): string[] => {
     .filter((s: string) => Boolean(s));
 };
 
-const getInterfaceByBand = (band: string): WlanGroupInterface | undefined => {
-  return draft.value?.Interface?.find((x: WlanGroupInterface) => x.Band === band);
+const getInterfaceByBand = (band: string): WlanInterface | undefined => {
+  return draft.value?.Interface?.find((x: WlanInterface) => x.Band === band);
 };
 
-const getBandSettingByBand = (band: string): WlanGroupBandSetting | undefined => {
-  return draft.value?.CommonSSIDBandSetting?.find((x: WlanGroupBandSetting) => x.Band === band);
+const getBandSettingByBand = (band: string): CommonSSIDBand | undefined => {
+  return draft.value?.CommonSSIDBandSetting?.find((x: CommonSSIDBand) => x.Band === band);
 };
 
 const onCommonSsidToggle = () => {
@@ -253,7 +262,7 @@ const onCommonSsidToggle = () => {
 const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
   if (!data.value) return null;
 
-  const postGroups: WlanBasicMultiPostRequest['WlanBasic']['WlanGroup'] = groups.value.map((g: WlanGroup) => {
+  const postGroups: WlanBasicMultiPostRequest['WlanGroup'] = groups.value.map((g: WlanGroupItem) => {
     const norm = normalizeGroup(g);
 
     // When Common SSID is enabled, the UI edits only a single block; ensure all interfaces share those values.
@@ -268,27 +277,39 @@ const buildPostPayload = (): WlanBasicMultiPostRequest | null => {
     }
 
     return {
-      SSIDGroupName: norm.SSIDGroupName,
+      Enable: norm.Enable,
+      Alias: norm.Alias,
+      SSID: norm.SSID,
+      KeyPassPhrase: norm.KeyPassPhrase,
+      SecurityMode: norm.SecurityMode,
+      SecurityModeAvailable: norm.SecurityModeAvailable,
       CommonSSIDEnable: norm.CommonSSIDEnable,
       MLOEnable: norm.MLOEnable,
-      CommonSSIDBandSetting: norm.CommonSSIDBandSetting?.map((b: WlanGroupBandSetting) => ({
+      BridgeInterface: norm.BridgeInterface,
+      MFPConfig: norm.MFPConfig,
+      CommonSSIDBandSetting: norm.CommonSSIDBandSetting?.map((b: CommonSSIDBand) => ({
         Band: b.Band,
-        Enable: b.Enable
+        Enable: b.Enable,
+        SSID: b.SSID,
+        SecurityMode: b.SecurityMode,
+        KeyPassPhrase: b.KeyPassPhrase
       })),
-      Interface: norm.Interface.map((i: WlanGroupInterface) => ({
-        Band: i.Band,
+      Interface: norm.Interface.map((i: WlanInterface) => ({
         Enable: i.Enable,
+        Band: i.Band,
+        Alias: i.Alias,
         SSID: i.SSID,
+        KeyPassPhrase: i.KeyPassPhrase,
         SecurityMode: i.SecurityMode,
-        // Prefer KeyPassPhrase, but allow fallback from WpaPreShareKey
-        KeyPassPhrase: (i.KeyPassPhrase ?? i.WpaPreShareKey ?? '').toString(),
-        // MFPConfig is removed from the UI but preserved in payload for compatibility.
-        MFPConfig: i.MFPConfig
+        SecurityModeAvailable: i.SecurityModeAvailable,
+        MFPConfig: i.MFPConfig,
+        AccessPointReference: i.AccessPointReference,
+        SSIDReference: i.SSIDReference
       }))
     };
   });
 
-  return { WlanBasic: { WlanGroup: postGroups } };
+  return { WlanGroup: postGroups };
 };
 
 const showSuccessMessage = () => {
@@ -359,9 +380,9 @@ onMounted(fetchConfig);
           <div class="col col-actions">{{ t('common.action') }}</div>
         </div>
 
-        <div v-for="(g, idx) in groups" :key="`${g.SSIDGroupName}-${idx}`" class="group-table-row">
+        <div v-for="(g, idx) in groups" :key="`${g.Alias}-${idx}`" class="group-table-row">
           <div class="col col-name">
-            <div class="name-line">{{ g.SSIDGroupName }}</div>
+            <div class="name-line">{{ g.Alias }}</div>
             <div class="sub-line">{{ summarizeGroup(g) }}</div>
           </div>
 
@@ -410,7 +431,7 @@ onMounted(fetchConfig);
       <template #header>
         <div class="card-header-row">
           <div class="card-title">
-            {{ t('common.edit') }}: {{ draft.SSIDGroupName }}
+            {{ t('common.edit') }}: {{ draft.Alias }}
           </div>
           <!-- Inline header actions removed per requirements -->
         </div>
@@ -429,7 +450,7 @@ onMounted(fetchConfig);
                     type="checkbox"
                     :data-testid="qa('wlan-basic-multi-common-ssid-enable-toggle')"
                     :checked="draft.CommonSSIDEnable === 1"
-                    @change="(e) => { draft!.CommonSSIDEnable = (e.target as HTMLInputElement).checked ? 1 : 0; onCommonSsidToggle(); }"
+                    @change="(e: Event) => { draft!.CommonSSIDEnable = (e.target as HTMLInputElement).checked ? 1 : 0; onCommonSsidToggle(); }"
                   >
                   <span class="slider"></span>
                 </label>
@@ -445,7 +466,7 @@ onMounted(fetchConfig);
                     :data-testid="qa('wlan-basic-multi-mlo-enable-toggle')"
                     :checked="draft.MLOEnable === 1"
                     :disabled="draft.CommonSSIDEnable === 0"
-                    @change="(e) => { draft!.MLOEnable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                    @change="(e: Event) => { draft!.MLOEnable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
                   >
                   <span class="slider"></span>
                 </label>
@@ -476,7 +497,7 @@ onMounted(fetchConfig);
                     type="checkbox"
                     :data-testid="qa('wlan-basic-multi-common-band-enable-toggle')"
                     :checked="draft.Interface[0].Enable === 1"
-                    @change="(e) => { draft!.Interface[0].Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                    @change="(e: Event) => { draft!.Interface[0].Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
                   >
                   <span class="slider"></span>
                 </label>
@@ -557,7 +578,7 @@ onMounted(fetchConfig);
                         type="checkbox"
                         :data-testid="qa(`wlan-basic-multi-iface-enable-toggle-${slug(b)}`)"
                         :checked="getInterfaceByBand(b)!.Enable === 1"
-                        @change="(e) => { getInterfaceByBand(b)!.Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
+                        @change="(e: Event) => { getInterfaceByBand(b)!.Enable = (e.target as HTMLInputElement).checked ? 1 : 0; }"
                       >
                       <span class="slider"></span>
                     </label>

@@ -46,11 +46,12 @@ const normalizeGroup = (group) => {
             copy.Interface.push({
                 Band: b,
                 Enable: 1,
-                SSID: copy.SSIDGroupName || '',
-                SecurityMode: '',
-                SecurityModeAvailable: '',
-                KeyPassPhrase: '',
-                MFPConfig: ''
+                Alias: '',
+                SSID: copy.SSID || '',
+                SecurityMode: copy.SecurityMode || '',
+                SecurityModeAvailable: copy.SecurityModeAvailable,
+                KeyPassPhrase: copy.KeyPassPhrase || '',
+                MFPConfig: copy.MFPConfig
             });
         }
     }
@@ -60,8 +61,8 @@ const fetchConfig = async () => {
     loading.value = true;
     try {
         const resp = await getWlanBasicMulti();
-        // Defensive: if backend still returns legacy schema, try to map into WlanGroup list
-        if (resp?.WlanBasic?.WlanGroup) {
+        // If backend already returns the new schema, accept it directly.
+        if (resp?.WlanGroup) {
             data.value = resp;
         }
         else {
@@ -71,45 +72,51 @@ const fetchConfig = async () => {
             const modes5g = legacy?.WlanBasic?.wifi5g?.SecurityModeAvailable ?? '';
             const modes6g = legacy?.WlanBasic?.wifi6g?.SecurityModeAvailable ?? '';
             data.value = {
-                WlanBasic: {
-                    WlanGroup: [
-                        {
-                            SSIDGroupName: t('wireless.groupDefaultName'),
-                            CommonSSIDEnable: legacy?.WlanBasic?.CommonSSIDEnable ?? 0,
-                            MLOEnable: legacy?.WlanBasic?.MLOEnable ?? 0,
-                            CommonSSIDBandSetting: bands.map((b) => ({ Band: b, Enable: 1 })),
-                            Interface: [
-                                {
-                                    Band: '2.4GHz',
-                                    Enable: legacy?.WlanBasic?.wifi2g?.Enable ?? 1,
-                                    SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
-                                    SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
-                                    SecurityModeAvailable: modes2g,
-                                    KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
-                                    MFPConfig: ''
-                                },
-                                {
-                                    Band: '5GHz',
-                                    Enable: legacy?.WlanBasic?.wifi5g?.Enable ?? 1,
-                                    SSID: legacy?.WlanBasic?.wifi5g?.SSID ?? '',
-                                    SecurityMode: legacy?.WlanBasic?.wifi5g?.SecurityMode ?? '',
-                                    SecurityModeAvailable: modes5g,
-                                    KeyPassPhrase: legacy?.WlanBasic?.wifi5g?.Password ?? '',
-                                    MFPConfig: ''
-                                },
-                                {
-                                    Band: '6GHz',
-                                    Enable: legacy?.WlanBasic?.wifi6g?.Enable ?? 1,
-                                    SSID: legacy?.WlanBasic?.wifi6g?.SSID ?? '',
-                                    SecurityMode: legacy?.WlanBasic?.wifi6g?.SecurityMode ?? '',
-                                    SecurityModeAvailable: modes6g,
-                                    KeyPassPhrase: legacy?.WlanBasic?.wifi6g?.Password ?? '',
-                                    MFPConfig: ''
-                                }
-                            ]
-                        }
-                    ]
-                }
+                WlanGroup: [
+                    {
+                        Enable: 1,
+                        Alias: t('wireless.groupDefaultName'),
+                        SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
+                        KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
+                        SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
+                        SecurityModeAvailable: modes2g,
+                        CommonSSIDEnable: legacy?.WlanBasic?.CommonSSIDEnable ?? 0,
+                        MLOEnable: legacy?.WlanBasic?.MLOEnable ?? 0,
+                        CommonSSIDBandSetting: bands.map((b) => ({ Band: b, Enable: 1 })),
+                        Interface: [
+                            {
+                                Band: '2.4GHz',
+                                Enable: legacy?.WlanBasic?.wifi2g?.Enable ?? 1,
+                                Alias: '',
+                                SSID: legacy?.WlanBasic?.wifi2g?.SSID ?? '',
+                                SecurityMode: legacy?.WlanBasic?.wifi2g?.SecurityMode ?? '',
+                                SecurityModeAvailable: modes2g,
+                                KeyPassPhrase: legacy?.WlanBasic?.wifi2g?.Password ?? '',
+                                MFPConfig: ''
+                            },
+                            {
+                                Band: '5GHz',
+                                Enable: legacy?.WlanBasic?.wifi5g?.Enable ?? 1,
+                                Alias: '',
+                                SSID: legacy?.WlanBasic?.wifi5g?.SSID ?? '',
+                                SecurityMode: legacy?.WlanBasic?.wifi5g?.SecurityMode ?? '',
+                                SecurityModeAvailable: modes5g,
+                                KeyPassPhrase: legacy?.WlanBasic?.wifi5g?.Password ?? '',
+                                MFPConfig: ''
+                            },
+                            {
+                                Band: '6GHz',
+                                Enable: legacy?.WlanBasic?.wifi6g?.Enable ?? 1,
+                                Alias: '',
+                                SSID: legacy?.WlanBasic?.wifi6g?.SSID ?? '',
+                                SecurityMode: legacy?.WlanBasic?.wifi6g?.SecurityMode ?? '',
+                                SecurityModeAvailable: modes6g,
+                                KeyPassPhrase: legacy?.WlanBasic?.wifi6g?.Password ?? '',
+                                MFPConfig: ''
+                            }
+                        ]
+                    }
+                ]
             };
         }
         // Capture last successful GET snapshot for non-edit "Cancel"
@@ -122,7 +129,7 @@ const fetchConfig = async () => {
         loading.value = false;
     }
 };
-const groups = computed(() => data.value?.WlanBasic?.WlanGroup ?? []);
+const groups = computed(() => data.value?.WlanGroup ?? []);
 const summarizeGroup = (g) => {
     const enabledBandCount = (g.CommonSSIDBandSetting ?? []).filter((b) => b.Enable === 1).length;
     const bandInfo = `${enabledBandCount}/${bands.length} ${t('wireless.bandsEnabled')}`;
@@ -169,7 +176,7 @@ const updateLocal = () => {
             itf.Enable = base.Enable;
         }
     }
-    data.value.WlanBasic.WlanGroup[idx] = normalized;
+    data.value.WlanGroup[idx] = normalized;
     cancelEdit();
 };
 // PUBLIC_INTERFACE
@@ -239,26 +246,38 @@ const buildPostPayload = () => {
             }
         }
         return {
-            SSIDGroupName: norm.SSIDGroupName,
+            Enable: norm.Enable,
+            Alias: norm.Alias,
+            SSID: norm.SSID,
+            KeyPassPhrase: norm.KeyPassPhrase,
+            SecurityMode: norm.SecurityMode,
+            SecurityModeAvailable: norm.SecurityModeAvailable,
             CommonSSIDEnable: norm.CommonSSIDEnable,
             MLOEnable: norm.MLOEnable,
+            BridgeInterface: norm.BridgeInterface,
+            MFPConfig: norm.MFPConfig,
             CommonSSIDBandSetting: norm.CommonSSIDBandSetting?.map((b) => ({
                 Band: b.Band,
-                Enable: b.Enable
+                Enable: b.Enable,
+                SSID: b.SSID,
+                SecurityMode: b.SecurityMode,
+                KeyPassPhrase: b.KeyPassPhrase
             })),
             Interface: norm.Interface.map((i) => ({
-                Band: i.Band,
                 Enable: i.Enable,
+                Band: i.Band,
+                Alias: i.Alias,
                 SSID: i.SSID,
+                KeyPassPhrase: i.KeyPassPhrase,
                 SecurityMode: i.SecurityMode,
-                // Prefer KeyPassPhrase, but allow fallback from WpaPreShareKey
-                KeyPassPhrase: (i.KeyPassPhrase ?? i.WpaPreShareKey ?? '').toString(),
-                // MFPConfig is removed from the UI but preserved in payload for compatibility.
-                MFPConfig: i.MFPConfig
+                SecurityModeAvailable: i.SecurityModeAvailable,
+                MFPConfig: i.MFPConfig,
+                AccessPointReference: i.AccessPointReference,
+                SSIDReference: i.SSIDReference
             }))
         };
     });
-    return { WlanBasic: { WlanGroup: postGroups } };
+    return { WlanGroup: postGroups };
 };
 const showSuccessMessage = () => {
     showSuccess.value = true;
@@ -393,7 +412,7 @@ if (__VLS_ctx.editIndex === null) {
     (__VLS_ctx.t('common.action'));
     for (const [g, idx] of __VLS_getVForSourceType((__VLS_ctx.groups))) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            key: (`${g.SSIDGroupName}-${idx}`),
+            key: (`${g.Alias}-${idx}`),
             ...{ class: "group-table-row" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -402,7 +421,7 @@ if (__VLS_ctx.editIndex === null) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "name-line" },
         });
-        (g.SSIDGroupName);
+        (g.Alias);
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "sub-line" },
         });
@@ -516,7 +535,7 @@ if (__VLS_ctx.draft && __VLS_ctx.editIndex !== null) {
             ...{ class: "card-title" },
         });
         (__VLS_ctx.t('common.edit'));
-        (__VLS_ctx.draft.SSIDGroupName);
+        (__VLS_ctx.draft.Alias);
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "edit-grid" },

@@ -1,3 +1,3 @@
-// Types for the multi-SSID Basic Config screen (WlanGroup-based schema).
-// This file is intentionally separate from the legacy WlanBasic* types to avoid breaking existing pages.
+// Types for WLAN multi-SSID Basic Config schema (WlanGroup-based).
+// Kept as a dedicated module so other legacy WLAN types remain unaffected.
 export {};
