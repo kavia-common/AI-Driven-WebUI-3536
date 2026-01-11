@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getTR471Config, runTR471Test } from '../../../services/api/tr471';
 import type { TR471Config, TR471TestResult } from '../../../types/tr471';
 import BaseButton from '../../../components/common/BaseButton.vue';
@@ -8,6 +9,8 @@ import BaseSelect from '../../../components/common/BaseSelect.vue';
 import BaseCheckbox from '../../../components/common/BaseCheckbox.vue';
 import BaseSpinner from '../../../components/common/BaseSpinner.vue';
 import LineChart from '../../../components/LineChart.vue';
+
+const { t } = useI18n();
 
 const loading = ref(false);
 const showAdvanced = ref(false);
@@ -27,7 +30,7 @@ onMounted(async () => {
     const response = await getTR471Config();
     config.value = response.TR471;
   } catch (error) {
-    console.error('Failed to load TR471 config:', error);
+    console.error(t('tr471.message_loadConfigFailed') + ':', error);
   } finally {
     loading.value = false;
   }
@@ -103,7 +106,7 @@ const runTest = async () => {
       };
     }
   } catch (error) {
-    console.error('TR471 test failed:', error);
+    console.error(t('tr471.message_testFailed') + ':', error);
   } finally {
     isRunning.value = false;
   }
@@ -115,7 +118,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
   if (uploadResult.value && uploadResult.value.IncrementalResult) {
     const uploadData = uploadResult.value.IncrementalResult.map(r => parseFloat(r[field]));
     datasets.push({
-      label: `Upload ${field}`,
+      label: `${t('tr471.test_upload')} ${field}`,
       data: uploadData,
       borderColor: 'rgb(54, 162, 235)',
       backgroundColor: 'rgba(54, 162, 235, 0.2)',
@@ -126,7 +129,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
   if (downloadResult.value && downloadResult.value.IncrementalResult) {
     const downloadData = downloadResult.value.IncrementalResult.map(r => parseFloat(r[field]));
     datasets.push({
-      label: `Download ${field}`,
+      label: `${t('tr471.test_download')} ${field}`,
       data: downloadData,
       borderColor: 'rgb(75, 192, 192)',
       backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -148,7 +151,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
 
 <template>
   <div class="page-container">
-    <h1 class="page-title">TR-471 Speed Test</h1>
+    <h1 class="page-title">{{ t('tr471.title') }}</h1>
 
     <div v-if="loading" class="loading-container">
       <BaseSpinner />
@@ -158,12 +161,12 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
       <div class="panel-section">
         <div class="form-grid">
           <div class="form-field">
-            <label class="form-label">Server</label>
+            <label class="form-label">{{ t('tr471.connection_server') }}</label>
             <BaseInput v-model="config.Server" />
           </div>
 
           <div class="form-field">
-            <label class="form-label">Port</label>
+            <label class="form-label">{{ t('tr471.connection_port') }}</label>
             <BaseInput v-model="config.Port" type="number" />
           </div>
         </div>
@@ -174,24 +177,24 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
             variant="secondary"
             :fullWidth="true"
           >
-            {{ showAdvanced ? 'Hide Advanced Config' : 'Show Advanced Config' }}
+            {{ showAdvanced ? t('tr471.advanced_toggleHide') : t('tr471.advanced_toggleShow') }}
           </BaseButton>
         </div>
 
         <div v-if="showAdvanced" class="advanced-config">
           <div class="form-grid">
             <div class="form-field">
-              <label class="form-label">MTU</label>
+              <label class="form-label">{{ t('tr471.connection_mtu') }}</label>
               <BaseInput v-model="config.MTU" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">DSCP</label>
+              <label class="form-label">{{ t('tr471.connection_dscp') }}</label>
               <BaseInput v-model="config.DSCP" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Protocol Version</label>
+              <label class="form-label">{{ t('tr471.connection_protocolVersion') }}</label>
               <BaseSelect
                 v-model="config.ProtocolVersion"
                 :options="config.ListProtocolVersion || []"
@@ -199,7 +202,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
             </div>
 
             <div class="form-field">
-              <label class="form-label">Network Interface</label>
+              <label class="form-label">{{ t('tr471.connection_networkInterface') }}</label>
               <BaseSelect
                 v-model="config.Interface"
                 :options="config.ListInterface || []"
@@ -207,7 +210,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
             </div>
 
             <div class="form-field">
-              <label class="form-label">Algorithm</label>
+              <label class="form-label">{{ t('tr471.connection_algorithm') }}</label>
               <BaseSelect
                 v-model="config.RateAdjAlgorithm"
                 :options="config.ListRateAdjAlgorithm || []"
@@ -221,7 +224,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
                   :checked="config.JumboFramesPermitted === 1"
                   @change="config.JumboFramesPermitted = ($event.target as HTMLInputElement).checked ? 1 : 0"
                 />
-                <span>Jumbo Frames Permitted</span>
+                <span>{{ t('tr471.connection_jumboFramesPermitted') }}</span>
               </label>
             </div>
 
@@ -232,7 +235,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
                   :checked="config.LocalInterfaceRateIncluded === 1"
                   @change="config.LocalInterfaceRateIncluded = ($event.target as HTMLInputElement).checked ? 1 : 0"
                 />
-                <span>Local Interface Rate Included</span>
+                <span>{{ t('tr471.connection_interfaceRateIncluded') }}</span>
               </label>
             </div>
 
@@ -243,27 +246,27 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
                   :checked="config.IPDVEnable === 1"
                   @change="config.IPDVEnable = ($event.target as HTMLInputElement).checked ? 1 : 0"
                 />
-                <span>IPDV Enable</span>
+                <span>{{ t('tr471.connection_ipdvEnable') }}</span>
               </label>
             </div>
 
             <div class="form-field">
-              <label class="form-label">Flow Count</label>
+              <label class="form-label">{{ t('tr471.advanced_flowCount') }}</label>
               <BaseInput v-model="config.FlowCount" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Maximum Flows</label>
+              <label class="form-label">{{ t('tr471.advanced_maximumFlows') }}</label>
               <BaseInput v-model="config.MaximumFlows" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Ethernet Priority</label>
+              <label class="form-label">{{ t('tr471.connection_ethernetPriority') }}</label>
               <BaseInput v-model="config.EthernetPriority" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">UDP Payload Content</label>
+              <label class="form-label">{{ t('tr471.connection_udpPayloadContent') }}</label>
               <BaseSelect
                 v-model="config.UDPPayloadContent"
                 :options="config.ListUDPPayloadContent || []"
@@ -271,47 +274,47 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
             </div>
 
             <div class="form-field">
-              <label class="form-label">Maximum Test Bandwidth</label>
+              <label class="form-label">{{ t('tr471.advanced_maximumTestBandwidth') }}</label>
               <BaseInput v-model="config.MaximumTestBandwidth" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Start Sending Rate</label>
+              <label class="form-label">{{ t('tr471.advanced_startSendingRate') }}</label>
               <BaseInput v-model="config.StartSendingRate" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Start Sending Rate Index</label>
+              <label class="form-label">{{ t('tr471.advanced_startSendingRateIndex') }}</label>
               <BaseInput v-model="config.StartSendingRateIndex" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Number TestSub Intervals</label>
+              <label class="form-label">{{ t('tr471.advanced_numberTestSubIntervals') }}</label>
               <BaseInput v-model="config.NumberTestSubIntervals" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Number First Mode Test Sub Intervals</label>
+              <label class="form-label">{{ t('tr471.advanced_numberFirstModeTestSubIntervals') }}</label>
               <BaseInput v-model="config.NumberFirstModeTestSubIntervals" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Test Sub Interval</label>
+              <label class="form-label">{{ t('tr471.advanced_testSubInterval') }}</label>
               <BaseInput v-model="config.TestSubInterval" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Status Feedback Interval</label>
+              <label class="form-label">{{ t('tr471.advanced_statusFeedbackInterval') }}</label>
               <BaseInput v-model="config.StatusFeedbackInterval" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Retry Thresh</label>
+              <label class="form-label">{{ t('tr471.advanced_retryThresh') }}</label>
               <BaseInput v-model="config.RetryThresh" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Test Type</label>
+              <label class="form-label">{{ t('tr471.advanced_testType') }}</label>
               <BaseSelect
                 v-model="config.TestType"
                 :options="config.ListTestType || []"
@@ -319,7 +322,7 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
             </div>
 
             <div class="form-field">
-              <label class="form-label">Seq Err Thresh</label>
+              <label class="form-label">{{ t('tr471.advanced_seqErrThresh') }}</label>
               <BaseInput v-model="config.SeqErrThresh" type="number" />
             </div>
 
@@ -330,27 +333,27 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
                   :checked="config.ReordDupIgnoreEnable === 1"
                   @change="config.ReordDupIgnoreEnable = ($event.target as HTMLInputElement).checked ? 1 : 0"
                 />
-                <span>Record Dup Ignore Enable</span>
+                <span>{{ t('tr471.advanced_reordDupIgnoreEnable') }}</span>
               </label>
             </div>
 
             <div class="form-field">
-              <label class="form-label">Lower Thresh</label>
+              <label class="form-label">{{ t('tr471.advanced_lowerThresh') }}</label>
               <BaseInput v-model="config.LowerThresh" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Upper Thresh</label>
+              <label class="form-label">{{ t('tr471.advanced_upperThresh') }}</label>
               <BaseInput v-model="config.UpperThresh" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">Slow Adj Thresh</label>
+              <label class="form-label">{{ t('tr471.advanced_slowAdjThresh') }}</label>
               <BaseInput v-model="config.SlowAdjThresh" type="number" />
             </div>
 
             <div class="form-field">
-              <label class="form-label">High Speed Delta</label>
+              <label class="form-label">{{ t('tr471.advanced_highSpeedDelta') }}</label>
               <BaseInput v-model="config.HighSpeedDelta" type="number" />
             </div>
 
@@ -361,16 +364,16 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
                   :checked="config.AuthenticationEnabled === 1"
                   @change="config.AuthenticationEnabled = ($event.target as HTMLInputElement).checked ? 1 : 0"
                 />
-                <span>Authentication Enabled</span>
+                <span>{{ t('tr471.connection_authenticationEnabled') }}</span>
               </label>
             </div>
 
             <div class="form-field">
-              <label class="form-label">Authentication Code</label>
+              <label class="form-label">{{ t('tr471.connection_authenticationCode') }}</label>
               <BaseInput
                 v-model="config.AuthenticationCode"
                 type="password"
-                placeholder="Enter authentication code"
+                :placeholder="t('tr471.connection_authenticationCode')"
               />
             </div>
           </div>
@@ -378,15 +381,15 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
 
         <div class="test-controls">
           <div class="test-type-section">
-            <h3 class="section-title">Speed Test Type</h3>
+            <h3 class="section-title">{{ t('tr471.test_sectionTitle') }}</h3>
             <div class="checkbox-row">
               <BaseCheckbox
                 v-model="testTypes.upload"
-                label="Upload"
+                :label="t('tr471.test_upload')"
               />
               <BaseCheckbox
                 v-model="testTypes.download"
-                label="Download"
+                :label="t('tr471.test_download')"
               />
             </div>
           </div>
@@ -397,53 +400,53 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
               :disabled="!canRunTest || isRunning"
               variant="primary"
             >
-              {{ isRunning ? 'Running Test...' : 'Run Speed Test' }}
+              {{ isRunning ? t('tr471.test_running') : t('tr471.test_run') }}
             </BaseButton>
           </div>
         </div>
 
         <div v-if="uploadResult || downloadResult" class="results-section">
-          <h2 class="section-title">Results Summary</h2>
+          <h2 class="section-title">{{ t('tr471.results_title') }}</h2>
 
           <div v-if="uploadResult" class="result-block">
-            <h3 class="result-title">Upload Result</h3>
+            <h3 class="result-title">{{ t('tr471.results_uploadTitle') }}</h3>
             <div class="result-grid">
               <div class="result-item">
-                <span class="result-label">IP Layer Capacity:</span>
+                <span class="result-label">{{ t('tr471.results_label_ipLayerCapacity') }}:</span>
                 <span class="result-value">{{ parseFloat(uploadResult.MaxIPLayerCapacity).toFixed(6) }}</span>
               </div>
               <div class="result-item">
-                <span class="result-label">Loss Ratio:</span>
+                <span class="result-label">{{ t('tr471.results_label_lossRatio') }}:</span>
                 <span class="result-value">{{ parseFloat(uploadResult.LossRatioSummary).toFixed(6) }}</span>
               </div>
               <div class="result-item">
-                <span class="result-label">RTT Range:</span>
+                <span class="result-label">{{ t('tr471.results_label_rttRange') }}:</span>
                 <span class="result-value">{{ parseFloat(uploadResult.RTTRangeSummary).toFixed(6) }}</span>
               </div>
               <div class="result-item">
-                <span class="result-label">PDV Range:</span>
+                <span class="result-label">{{ t('tr471.results_label_pdvRange') }}:</span>
                 <span class="result-value">{{ parseFloat(uploadResult.PDVRangeSummary).toFixed(6) }}</span>
               </div>
             </div>
           </div>
 
           <div v-if="downloadResult" class="result-block">
-            <h3 class="result-title">Download Result</h3>
+            <h3 class="result-title">{{ t('tr471.results_downloadTitle') }}</h3>
             <div class="result-grid">
               <div class="result-item">
-                <span class="result-label">IP Layer Capacity:</span>
+                <span class="result-label">{{ t('tr471.results_label_ipLayerCapacity') }}:</span>
                 <span class="result-value">{{ parseFloat(downloadResult.MaxIPLayerCapacity).toFixed(6) }}</span>
               </div>
               <div class="result-item">
-                <span class="result-label">Loss Ratio:</span>
+                <span class="result-label">{{ t('tr471.results_label_lossRatio') }}:</span>
                 <span class="result-value">{{ parseFloat(downloadResult.LossRatioSummary).toFixed(6) }}</span>
               </div>
               <div class="result-item">
-                <span class="result-label">RTT Range:</span>
+                <span class="result-label">{{ t('tr471.results_label_rttRange') }}:</span>
                 <span class="result-value">{{ parseFloat(downloadResult.RTTRangeSummary).toFixed(6) }}</span>
               </div>
               <div class="result-item">
-                <span class="result-label">PDV Range:</span>
+                <span class="result-label">{{ t('tr471.results_label_pdvRange') }}:</span>
                 <span class="result-value">{{ parseFloat(downloadResult.PDVRangeSummary).toFixed(6) }}</span>
               </div>
             </div>
@@ -451,19 +454,19 @@ const getCombinedChartData = (field: 'IPLayerCapacity' | 'RTTRange' | 'PDVRange'
 
           <div class="charts-grid">
             <div class="chart-item">
-              <h4 class="chart-title">IP Layer Capacity</h4>
+              <h4 class="chart-title">{{ t('tr471.results_chart_ipLayerCapacity') }}</h4>
               <LineChart :chartData="getCombinedChartData('IPLayerCapacity')" />
             </div>
             <div class="chart-item">
-              <h4 class="chart-title">Round-trip Time</h4>
+              <h4 class="chart-title">{{ t('tr471.results_chart_roundTripTime') }}</h4>
               <LineChart :chartData="getCombinedChartData('RTTRange')" />
             </div>
             <div class="chart-item">
-              <h4 class="chart-title">Jitter</h4>
+              <h4 class="chart-title">{{ t('tr471.results_chart_jitter') }}</h4>
               <LineChart :chartData="getCombinedChartData('PDVRange')" />
             </div>
             <div class="chart-item">
-              <h4 class="chart-title">Loss</h4>
+              <h4 class="chart-title">{{ t('tr471.results_chart_loss') }}</h4>
               <LineChart :chartData="getCombinedChartData('LossRatio')" />
             </div>
           </div>

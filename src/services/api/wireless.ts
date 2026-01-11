@@ -1,9 +1,10 @@
-import type { 
+import type {
   WlanBasicResponse,
   WlanAdvancedResponse,
   WlanWpsResponse,
-  WlanMeshResponse 
+  WlanMeshResponse
 } from '../../types/wireless';
+import type { WlanBasicMultiGetResponse, WlanBasicMultiPostRequest } from '../../types/wlanBasicMulti';
 import { handleApiResponse } from '../../utils/apiUtils';
 import { callApi } from '../apiClient';
 import {
@@ -39,6 +40,36 @@ export async function updateWlanBasic(data: Partial<WlanBasicResponse>): Promise
     body: JSON.stringify(data),
   });
   return handleApiResponse<WlanBasicResponse>(response);
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * Fetch Basic WLAN configuration in the new multi-SSID WlanGroup schema.
+ */
+export async function getWlanBasicMulti(): Promise<WlanBasicMultiGetResponse> {
+  if (isDevelopment) {
+    // Reuse legacy mock if multi mock isn't present; UI will normalize.
+    return (wlanBasicMockData as unknown) as WlanBasicMultiGetResponse;
+  }
+  return callApi<WlanBasicMultiGetResponse>(`${API_URL}?list=WlanBasic`);
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * Update Basic WLAN configuration in the new multi-SSID WlanGroup schema.
+ */
+export async function updateWlanBasicMulti(data: WlanBasicMultiPostRequest): Promise<unknown> {
+  if (isDevelopment) {
+    return data;
+  }
+  const response = await fetch(`${API_URL}?list=WlanBasic`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  return handleApiResponse(response);
 }
 
 export async function getWlanAdvanced(): Promise<WlanAdvancedResponse> {
